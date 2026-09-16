@@ -28,6 +28,7 @@
           post_events: true
           job_args:
             extra_vars:
+              webhook_path: "{{ webhook_path }}"
               incident_description: "{{ event.short_description + ' ' + event.description }}"
               incident_sys_id: "{{ event.sys_id }}"
               incident_number: "{{ event.number }}"

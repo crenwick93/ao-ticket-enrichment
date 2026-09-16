@@ -19,9 +19,9 @@
 
     webhook_port: 5001
 
-    servicenow_instance: "{{ lookup('env', 'SN_INSTANCE') }}"
-    servicenow_username: "{{ lookup('env', 'SN_USERNAME') }}"
-    servicenow_password: "{{ lookup('env', 'SN_PASSWORD') }}"
+    servicenow_instance: "{{ lookup('env', 'SERVICENOW_INSTANCE_URL') | default(lookup('env', 'SN_INSTANCE'), true) }}"
+    servicenow_username: "{{ lookup('env', 'SERVICENOW_USERNAME') | default(lookup('env', 'SN_USERNAME'), true) }}"
+    servicenow_password: "{{ lookup('env', 'SERVICENOW_PASSWORD') | default(lookup('env', 'SN_PASSWORD'), true) }}"
     monitoring_host_ip: "{{ ansible_host }}"
 
     monitored_services:

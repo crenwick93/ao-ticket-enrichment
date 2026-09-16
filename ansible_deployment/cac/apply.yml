@@ -20,10 +20,10 @@
     aap_configuration_async_retries: 60
     aap_configuration_async_delay: 5
 
-    # ServiceNow
-    sn_instance: "{{ lookup('env', 'SN_INSTANCE') | default(omit, true) }}"
-    sn_username: "{{ lookup('env', 'SN_USERNAME') | default(omit, true) }}"
-    sn_password: "{{ lookup('env', 'SN_PASSWORD') | default(omit, true) }}"
+    # ServiceNow (supports both SN_ and SERVICENOW_ env var naming)
+    sn_instance: "{{ lookup('env', 'SERVICENOW_INSTANCE_URL') | default(lookup('env', 'SN_INSTANCE'), true) | default(omit, true) }}"
+    sn_username: "{{ lookup('env', 'SERVICENOW_USERNAME') | default(lookup('env', 'SN_USERNAME'), true) | default(omit, true) }}"
+    sn_password: "{{ lookup('env', 'SERVICENOW_PASSWORD') | default(lookup('env', 'SN_PASSWORD'), true) | default(omit, true) }}"
 
     # AO Webhook (EDA-to-AO bridge)
     ao_webhook_base_url: "{{ lookup('env', 'AO_WEBHOOK_BASE_URL') | default(omit, true) }}"

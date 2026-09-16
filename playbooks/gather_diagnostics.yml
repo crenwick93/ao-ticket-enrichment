@@ -53,8 +53,8 @@
       changed_when: false
       failed_when: false
 
-    - name: Pull last 50 lines of journal for the target service
-      ansible.builtin.command: "journalctl -u {{ service_name }} -n 50 --no-pager"
+    - name: Pull last 20 lines of journal for the target service
+      ansible.builtin.command: "journalctl -u {{ service_name }} -n 20 --no-pager"
       register: service_journal
       changed_when: false
       failed_when: false
@@ -107,15 +107,10 @@
           --- All Failed Units ---
           {{ failed_units.stdout | default('none') | default('no failed units', true) }}
 
-          --- nginx.conf contents ---
-          {{ nginx_conf_content.stdout | default('unable to read nginx.conf') }}
-
           --- System Health ---
           Uptime: {{ sys_uptime.stdout }}
-          Disk:
-          {{ sys_disk.stdout }}
-          Memory:
-          {{ sys_memory.stdout }}
+          Memory: {{ sys_memory.stdout_lines[1] | default('unknown') }}
+          Disk: {{ sys_disk.stdout_lines[1] | default('unknown') }}
 
     - name: Display diagnostics report
       ansible.builtin.debug:

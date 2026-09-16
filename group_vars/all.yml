@@ -1,0 +1,7 @@
+---
+# Service health checks — used by gather_diagnostics.yml
+# Override per host group for service-specific validation
+critical_services:
+  - nginx
+  - sshd
+health_endpoint: "http://localhost:80"

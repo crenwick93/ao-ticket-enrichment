@@ -1,0 +1,44 @@
+---
+- name: Update ServiceNow Incident
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - incident_sys_id is defined
+          - incident_sys_id | length > 0
+        fail_msg: "incident_sys_id must be provided"
+
+    - name: Update incident with work notes and state change
+      servicenow.itsm.incident:
+        sys_id: "{{ incident_sys_id }}"
+        state: "{{ incident_state }}"
+        other:
+          work_notes: "[code]{{ work_notes }}[/code]"
+      when:
+        - work_notes | default('') | length > 0
+        - incident_state | default('') | length > 0
+
+    - name: Update incident with work notes only
+      servicenow.itsm.incident:
+        sys_id: "{{ incident_sys_id }}"
+        other:
+          work_notes: "[code]{{ work_notes }}[/code]"
+      when:
+        - work_notes | default('') | length > 0
+        - incident_state | default('') | length == 0
+
+    - name: Update incident state only
+      servicenow.itsm.incident:
+        sys_id: "{{ incident_sys_id }}"
+        state: "{{ incident_state }}"
+      when:
+        - work_notes | default('') | length == 0
+        - incident_state | default('') | length > 0
+
+    - name: Display update confirmation
+      ansible.builtin.debug:
+        msg: "Incident {{ incident_sys_id }} updated (state={{ incident_state | default('unchanged') }})"

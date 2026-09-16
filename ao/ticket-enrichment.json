@@ -1,0 +1,90 @@
+{
+  "schema_version": "2.0.0",
+  "name": "Ticket Enrichment — AI-Driven Incident Analysis",
+  "description": "When a ServiceNow incident arrives via EDA, this workflow gathers diagnostics from the affected host, sends them to an AI agent for root cause analysis, and updates the incident with the findings.",
+  "triggers": [
+    {
+      "id": "trigger_eda",
+      "type": "eda_trigger",
+      "name": "Incident Alert (EDA)",
+      "parameters": {
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "incident_number": {
+              "type": "string",
+              "description": "ServiceNow incident number (e.g. INC0010042)"
+            },
+            "incident_sys_id": {
+              "type": "string",
+              "description": "ServiceNow incident sys_id"
+            },
+            "incident_description": {
+              "type": "string",
+              "description": "Combined short_description + description from the incident"
+            }
+          }
+        }
+      },
+      "position": {
+        "x": 0,
+        "y": 300
+      }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "gather_diagnostics",
+      "type": "aap_job_template",
+      "name": "Gather Diagnostics",
+      "parameters": {
+        "job_template_name": "Gather Diagnostics",
+        "organization_name": "Default",
+        "extra_vars": {
+          "incident_sys_id": "${trigger.incident_sys_id}",
+          "incident_description": "${trigger.incident_description}"
+        }
+      },
+      "position": {
+        "x": 400,
+        "y": 300
+      }
+    },
+    {
+      "id": "triage_agent",
+      "type": "agentic",
+      "name": "AI: Root Cause Analysis",
+      "parameters": {
+        "model": "llama-scout-17b",
+        "prompt": "You are an expert Linux systems engineer. A ServiceNow incident has been raised and system diagnostics have been collected from the affected host.\n\nIncident: ${trigger.incident_number}\nDescription: ${trigger.incident_description}\n\nDiagnostics:\n${gather_diagnostics.artifacts.diagnostics_report}\n\nAnalyse the diagnostics and provide:\n1. Root Cause Analysis — what failed and why\n2. Evidence — key log lines or indicators that support your conclusion\n3. Remediation steps — specific commands or actions to resolve the issue\n4. Prevention — how to stop this happening again\n\nWrite your response as PLAIN TEXT suitable for a ServiceNow work note.\nUse clear headings and bullet points. Keep under 2000 characters.\nBe concise and actionable."
+      },
+      "position": {
+        "x": 800,
+        "y": 300
+      }
+    },
+    {
+      "id": "update_snow_ticket",
+      "type": "aap_job_template",
+      "name": "Update SNOW Ticket",
+      "parameters": {
+        "job_template_name": "Update SNOW Ticket",
+        "organization_name": "Default",
+        "extra_vars": {
+          "incident_sys_id": "${trigger.incident_sys_id}",
+          "incident_state": "2",
+          "work_notes": "[AUTOMATED — AI Root Cause Analysis]\n\n${triage_agent.result.content}"
+        }
+      },
+      "position": {
+        "x": 1200,
+        "y": 300
+      }
+    }
+  ],
+  "edges": [
+    { "from": "trigger_eda", "to": "gather_diagnostics" },
+    { "from": "gather_diagnostics", "to": "triage_agent" },
+    { "from": "triage_agent", "to": "update_snow_ticket" }
+  ]
+}

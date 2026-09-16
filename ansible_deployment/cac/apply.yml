@@ -1,0 +1,68 @@
+---
+- name: Apply AAP objects — Ticket Enrichment with Automation Orchestrator
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  collections:
+    - infra.aap_configuration
+
+  vars:
+    aap_hostname: "{{ lookup('env', 'AAP_HOSTNAME') | default(omit, true) }}"
+    aap_token: "{{ lookup('env', 'AAP_TOKEN') | default(omit, true) }}"
+    aap_validate_certs: "{{ (lookup('env', 'AAP_VALIDATE_CERTS') | default('false', true)) | bool }}"
+
+    controller_host: "{{ aap_hostname }}"
+    controller_oauthtoken: "{{ aap_token }}"
+    controller_validate_certs: "{{ aap_validate_certs }}"
+
+    aap_configuration_secure_logging: false
+    aap_configuration_collect_logs: true
+    aap_configuration_async_retries: 60
+    aap_configuration_async_delay: 5
+
+    # ServiceNow
+    sn_instance: "{{ lookup('env', 'SN_INSTANCE') | default(omit, true) }}"
+    sn_username: "{{ lookup('env', 'SN_USERNAME') | default(omit, true) }}"
+    sn_password: "{{ lookup('env', 'SN_PASSWORD') | default(omit, true) }}"
+
+    # AO Webhook (EDA-to-AO bridge)
+    ao_webhook_base_url: "{{ lookup('env', 'AO_WEBHOOK_BASE_URL') | default(omit, true) }}"
+    ao_webhook_path: "{{ lookup('env', 'AO_WEBHOOK_PATH') | default('ticket-enrichment-trigger', true) }}"
+    ao_webhook_client_id: "{{ lookup('env', 'AO_WEBHOOK_CLIENT_ID') | default('placeholder', true) }}"
+    ao_webhook_client_secret: "{{ lookup('env', 'AO_WEBHOOK_CLIENT_SECRET') | default('placeholder', true) }}"
+
+    # Monitoring SSH key (EC2 instance provisioned by Terraform)
+    monitoring_ssh_key: "{{ lookup('file', monitoring_ssh_key_path, errors='ignore') | default(omit, true) }}"
+    monitoring_ssh_key_path: "{{ lookup('env', 'MONITORING_SSH_KEY_PATH') | default(playbook_dir + '/../../setup/terraform/demo-key.pem', true) }}"
+
+    # EDA custom Decision Environment image
+    de_image: "quay.io/crenwick93/snow-de:latest"
+
+  vars_files:
+    - vars.yml
+  roles:
+    - role: infra.aap_configuration.dispatch
+
+  post_tasks:
+    - name: Look up rulebook activations
+      ansible.builtin.uri:
+        url: "{{ aap_hostname }}/api/eda/v1/activations/"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ aap_token }}"
+        validate_certs: "{{ aap_validate_certs }}"
+        status_code: [200]
+      register: _activations_response
+
+    - name: Enable disabled rulebook activations
+      ansible.builtin.uri:
+        url: "{{ aap_hostname }}/api/eda/v1/activations/{{ item.id }}/enable/"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ aap_token }}"
+        validate_certs: "{{ aap_validate_certs }}"
+        status_code: [204, 200, 409]
+      loop: "{{ _activations_response.json.results }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: not item.is_enabled | default(true)

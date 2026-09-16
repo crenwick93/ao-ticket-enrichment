@@ -2,74 +2,174 @@
 
 ## Pre-Demo Checklist
 
-- [ ] EC2 instance running, nginx serving at `http://<EC2_IP>`
-- [ ] Prometheus targets all green at `http://<EC2_IP>:9090/targets`
-- [ ] AAP objects created, EDA rulebook activation enabled
-- [ ] AO workflow imported and published
-- [ ] ServiceNow PDI is clean (no old incidents)
-- [ ] Terminal ready with `.env` sourced: `set -a && source .env && set +a`
-- [ ] Browser tabs: nginx page, Prometheus, AAP Jobs, AO Executions, ServiceNow Incidents
+- [ ] EC2 instance running, nginx healthy: http://34.246.108.129
+- [ ] Prometheus targets green: http://34.246.108.129:9090/targets
+- [ ] EDA rulebook activation running in AAP
+- [ ] AO workflow published
+- [ ] ServiceNow PDI clean (resolve/delete old demo incidents)
+- [ ] Browser tabs ready:
+  - Terminal (SSH)
+  - Prometheus Alerts: http://34.246.108.129:9090/alerts
+  - AAP Jobs
+  - AO Executions
+  - ServiceNow Incidents
 
 ---
 
-## Scene 1: The Setup (30 seconds)
+## Scene 1: Show the Healthy State (60 seconds)
 
-**Show:** nginx hello-world page + Prometheus targets
+**Browser → http://34.246.108.129**
 
-> "RHEL 9 instance running nginx, monitored by Prometheus and AlertManager.
-> When nginx goes down, an alert fires, creates a ServiceNow incident,
-> and Automation Orchestrator enriches it with AI-driven root cause analysis."
+> "We have a RHEL 9 instance running nginx, serving a simple web page.
+> It's monitored by Prometheus with a 15-second alert rule — if nginx
+> goes down, the full chain fires automatically."
+
+**Browser → http://34.246.108.129:9090/targets**
+
+> "Prometheus is scraping Node Exporter every 10 seconds. All targets healthy."
+
+**Browser → http://34.246.108.129:9090/alerts**
+
+> "Our `ServiceDown_nginx` alert is currently green — inactive."
 
 ---
 
-## Scene 2: Break nginx (15 seconds)
+## Scene 2: Break nginx — Simulate a Bad Deployment (30 seconds)
+
+**Terminal — SSH to the instance:**
 
 ```bash
-./scripts/break-nginx.sh
+ssh -i setup/terraform/demo-key.pem ec2-user@34.246.108.129
 ```
 
-> "Bad config directive injected — simulating a failed deployment."
+**Show the current healthy config:**
+
+```bash
+sudo nginx -t
+# nginx: configuration file /etc/nginx/nginx.conf syntax is ok
+```
+
+**Inject the bad directive:**
+
+```bash
+sudo sh -c 'echo "unknown_directive broken;" >> /etc/nginx/nginx.conf'
+sudo systemctl restart nginx
+# Job for nginx.service failed...
+```
+
+> "I've added a bad directive to nginx.conf — simulating a developer
+> pushing a broken config change. nginx can't start."
+
+**Verify it's broken:**
+
+```bash
+sudo systemctl status nginx --no-pager
+# Active: failed
+sudo nginx -t
+# nginx: [emerg] unknown directive "unknown_directive"
+```
+
+**Stay on SSH — leave the terminal visible.**
 
 ---
 
-## Scene 3: Alert Chain Fires (30 seconds)
+## Scene 3: Watch Prometheus Detect (30 seconds)
 
-**Show:** Prometheus → Alerts (firing), then ServiceNow → new incident
+**Browser → http://34.246.108.129:9090/alerts**
 
-> "Prometheus detected nginx is down. AlertManager fired the alert,
-> webhook bridge created the ServiceNow incident with the host IP
-> and alert details."
+> "Within 15 seconds, Prometheus detects nginx.service is down.
+> The `ServiceDown_nginx` alert goes to PENDING, then FIRING."
+
+**Wait for the alert to go red/firing.** Refresh the page if needed.
+
+> "AlertManager receives the alert and fires it to our webhook bridge,
+> which creates a ServiceNow incident automatically."
 
 ---
 
-## Scene 4: AO Workflow (90 seconds)
+## Scene 4: Show the ServiceNow Incident (30 seconds)
 
-**Show:** AAP Jobs → bridge job, then AO Executions → workflow
+**Browser → ServiceNow → Incidents → newest incident**
+
+> "Here's the incident — created automatically by the webhook bridge.
+> Short description says 'systemd service nginx.service is down',
+> and the description includes the affected host IP."
+
+**Point out:**
+- Impact: 1 - High
+- Urgency: 1 - High
+- Description mentions "Affected host IP: 34.246.108.129"
+
+> "Now Event-Driven Ansible is polling ServiceNow. It picks up this
+> new incident and triggers the AO workflow."
+
+---
+
+## Scene 5: Show the AO Workflow Running (90 seconds)
+
+**Browser → AAP → Jobs**
+
+> "The bridge job template has fired — it authenticated with AO using
+> OAuth2 and posted the incident event to the workflow trigger."
+
+**Browser → AO → Executions → click the running workflow**
+
+> "Here's the AO workflow — three steps."
+
+**As nodes complete:**
 
 1. **Gather Diagnostics** (green):
-   > "SSHs to the host, collects nginx status, config test, journal logs,
-   > failed units, system health. Everything the AI needs."
+   > "This SSHed to the host, ran `nginx -t`, collected journal logs,
+   > systemd status, and system health. All the evidence the AI needs."
 
 2. **AI: Root Cause Analysis** (running):
-   > "The AI agent reads the incident and diagnostics. It identifies the
-   > bad directive, explains why nginx failed, and suggests the fix."
+   > "The AI agent receives the diagnostics and the incident details.
+   > It analyses the logs, identifies the root cause, and writes up
+   > remediation steps — all formatted as HTML for ServiceNow."
 
 3. **Update SNOW Ticket** (green):
-   > "The incident is updated with the full RCA — root cause, evidence,
-   > remediation steps, and prevention advice."
-
-**Switch to:** ServiceNow → incident work notes → show AI analysis
+   > "The incident is updated with the AI's analysis and moved to
+   > In Progress."
 
 ---
 
-## Scene 5: Manual Fix (15 seconds)
+## Scene 6: Show the Enriched Ticket (60 seconds)
+
+**Browser → ServiceNow → refresh the incident → scroll to Work Notes**
+
+> "Here's the AI root cause analysis — posted automatically."
+
+**Walk through the work note:**
+
+- **Root Cause Analysis**: "configuration error in nginx.conf, unknown directive on line 38"
+- **Evidence from Logs**: actual log excerpt showing the `[emerg]` error
+- **Remediation Steps**: specific commands — edit the config, run `nginx -t`, restart
+- **Prevention Recommendations**: config validation, staging environment, linting
+
+> "The operations team now has everything they need to fix this.
+> Root cause identified, evidence cited, exact commands to resolve,
+> and advice on preventing it happening again — all within about
+> 90 seconds of the failure occurring."
+
+---
+
+## Scene 7: Fix it (optional, 15 seconds)
+
+**Terminal (still SSH'd):**
 
 ```bash
-./scripts/fix-nginx.sh
+sudo sed -i '/unknown_directive/d' /etc/nginx/nginx.conf
+sudo nginx -t
+# syntax is ok
+sudo systemctl restart nginx
+# nginx is back
+exit
 ```
 
-> "Fix applied. In a production scenario, the operations team follows
-> the AI's remediation steps. The incident has everything they need."
+**Browser → http://34.246.108.129 → page loads again**
+
+> "Fixed. In production, the team would follow the AI's remediation
+> steps. The incident has the full audit trail."
 
 ---
 
@@ -77,6 +177,21 @@
 
 | Metric | Value |
 |--------|-------|
-| Time from failure to enriched ticket | ~2 minutes |
+| Time from failure to enriched ticket | ~90 seconds |
 | Manual steps | 0 |
-| ServiceNow updates | 1 (AI root cause analysis) |
+| ServiceNow work note updates | 1 (AI root cause analysis) |
+| Components in the chain | 7 (nginx → Prometheus → AlertManager → Webhook → SNOW → EDA → AO) |
+
+---
+
+## Quick Reset Between Demos
+
+```bash
+# From your laptop (not SSH'd)
+./scripts/fix-nginx.sh
+
+# Wait 30 seconds for Prometheus to see recovery, then:
+./scripts/break-nginx.sh
+```
+
+Or manually via SSH as shown in Scene 2 for a more natural demo feel.

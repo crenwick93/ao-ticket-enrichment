@@ -24,9 +24,10 @@
     - name: Resolve incident
       servicenow.itsm.incident:
         sys_id: "{{ incident_sys_id }}"
-        state: resolved
-        close_code: "Solved (Permanently)"
-        close_notes: "{{ close_notes | default('Resolved by automated remediation') }}"
+        other:
+          state: "6"
+          close_code: "Solved (Permanently)"
+          close_notes: "{{ close_notes | default('Resolved by automated remediation') }}"
       when:
         - incident_state | default('') | string in ['6', 'resolved']
 

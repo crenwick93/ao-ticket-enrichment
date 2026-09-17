@@ -84,7 +84,7 @@
     {
       "id": "select_fix_agent",
       "type": "agentic",
-      "name": "AI: Select Fix",
+      "name": "AI: Search Automation Catalog",
       "parameters": {
         "model": "llama-scout-17b",
         "prompt": "You are an IT operations automation agent. A ServiceNow incident has been analysed and root cause identified. Your job is to find the correct AAP job template that can fix this issue.\n\nIncident: ${trigger.incident_number}\nDescription: ${trigger.incident_description}\nDiagnostics: ${gather_diagnostics.artifacts.diagnostics_report}\n\nSteps:\n1. Use the AAP MCP tools to list available job templates\n2. Read the descriptions carefully to find the one that can fix this specific issue\n3. If you find a matching job template, set fix_template_name to the exact name of that job template and set fix_available to 'yes'\n4. If no suitable job template exists, set fix_available to 'no' and explain why in fix_reason\n\nDo NOT run the job template. Just identify the correct one."
@@ -97,17 +97,17 @@
     {
       "id": "route_switch",
       "type": "switch",
-      "name": "Fix Available?",
+      "name": "Remediation Available?",
       "parameters": {
         "cases": [
           {
             "port": "case_fix",
-            "label": "Fix Found",
+            "label": "Remediation Found",
             "condition": "${select_fix_agent.result.content.fix_available} == 'yes'"
           },
           {
             "port": "case_no_fix",
-            "label": "No Fix Available",
+            "label": "No Remediation Available",
             "condition": "${select_fix_agent.result.content.fix_available} == 'no'"
           }
         ]
@@ -120,7 +120,7 @@
     {
       "id": "run_fix",
       "type": "aap_job_template",
-      "name": "Run Fix",
+      "name": "Run Remediation",
       "parameters": {
         "job_template_name": "${select_fix_agent.result.content.fix_template_name}",
         "organization_name": "Default",
@@ -137,14 +137,14 @@
     {
       "id": "update_snow_resolved",
       "type": "aap_job_template",
-      "name": "Update SNOW (Resolved)",
+      "name": "Update SNOW (Remediated)",
       "parameters": {
         "job_template_name": "Update SNOW Ticket",
         "organization_name": "Default",
         "extra_vars": {
           "incident_sys_id": "${trigger.incident_sys_id}",
           "incident_state": "6",
-          "work_notes": "[AUTOMATED — Remediation Complete] Fix applied using job template: ${select_fix_agent.result.content.fix_template_name}"
+          "work_notes": "[AUTOMATED — Remediation Complete] Automated remediation applied using: ${select_fix_agent.result.content.fix_template_name}. Reason: ${select_fix_agent.result.content.fix_reason}"
         }
       },
       "position": {
@@ -155,13 +155,13 @@
     {
       "id": "update_snow_no_fix",
       "type": "aap_job_template",
-      "name": "Update SNOW (No Fix Found)",
+      "name": "Update SNOW (No Remediation)",
       "parameters": {
         "job_template_name": "Update SNOW Ticket",
         "organization_name": "Default",
         "extra_vars": {
           "incident_sys_id": "${trigger.incident_sys_id}",
-          "work_notes": "[AUTOMATED — No Automated Fix Available] The AI agent could not find a suitable job template to remediate this issue. Manual intervention is required. Please review the root cause analysis above for remediation guidance."
+          "work_notes": "[AUTOMATED — No Automated Remediation Available] The AI agent searched the automation catalog but could not find a suitable remediation for this issue. Reason: ${select_fix_agent.result.content.fix_reason}. Manual intervention is required. Please review the root cause analysis above for remediation guidance."
         }
       },
       "position": {

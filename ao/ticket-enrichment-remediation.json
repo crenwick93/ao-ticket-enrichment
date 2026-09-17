@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0.0",
   "name": "Ticket Enrichment + Remediation — AI-Driven Incident Response",
-  "description": "Extends the enrichment workflow with automated remediation. Gathers diagnostics, performs AI root cause analysis, then an AI agent discovers the appropriate AAP job template to fix the issue and runs it. Updates the ServiceNow incident with RCA and remediation results.",
+  "description": "Extends the enrichment workflow with automated remediation. Gathers diagnostics, performs AI root cause analysis, then an AI agent discovers the appropriate AAP job template to fix the issue and runs it. If no suitable fix is found, the incident is updated with the analysis only. Updates the ServiceNow incident with RCA and remediation results.",
   "triggers": [
     {
       "id": "trigger_eda",
@@ -87,10 +87,33 @@
       "name": "AI: Auto-Remediate",
       "parameters": {
         "model": "llama-scout-17b",
-        "prompt": "You are an IT operations automation agent. A ServiceNow incident has been analysed and root cause identified. Your job is to find and run the correct AAP job template to fix the issue.\n\nIncident: ${trigger.incident_number}\nDescription: ${trigger.incident_description}\nDiagnostics: ${gather_diagnostics.artifacts.diagnostics_report}\n\nSteps:\n1. Use the AAP MCP tools to list available job templates\n2. Read the descriptions to find the one that can fix this specific issue\n3. Launch that job template with the appropriate extra_vars including target_host_ip and incident_sys_id\n4. The target host IP can be found in the incident description (look for 'Affected host IP:')\n5. Report what you did and the result\n\nExtra vars to pass when launching the job:\n- incident_sys_id: ${trigger.incident_sys_id}\n- incident_description: ${trigger.incident_description}"
+        "prompt": "You are an IT operations automation agent. A ServiceNow incident has been analysed and root cause identified. Your job is to find and run the correct AAP job template to fix the issue.\n\nIncident: ${trigger.incident_number}\nDescription: ${trigger.incident_description}\nDiagnostics: ${gather_diagnostics.artifacts.diagnostics_report}\n\nSteps:\n1. Use the AAP MCP tools to list available job templates\n2. Read the descriptions carefully to find the one that can fix this specific issue\n3. If you find a matching job template, launch it with these extra_vars:\n   - incident_sys_id: ${trigger.incident_sys_id}\n   - incident_description: ${trigger.incident_description}\n4. The target host IP can be found in the incident description (look for 'Affected host IP:')\n5. Set remediation_status to 'fixed' if you successfully launched a fix, or 'no_fix_available' if no suitable job template exists\n\nIMPORTANT: You must set remediation_status in your response."
       },
       "position": {
         "x": 1600,
+        "y": 300
+      }
+    },
+    {
+      "id": "route_switch",
+      "type": "switch",
+      "name": "Fix Applied?",
+      "parameters": {
+        "cases": [
+          {
+            "port": "case_fixed",
+            "label": "Fixed",
+            "condition": "${remediate_agent.result.content.remediation_status} == 'fixed'"
+          },
+          {
+            "port": "case_no_fix",
+            "label": "No Fix Available",
+            "condition": "${remediate_agent.result.content.remediation_status} == 'no_fix_available'"
+          }
+        ]
+      },
+      "position": {
+        "x": 2000,
         "y": 300
       }
     },
@@ -104,12 +127,29 @@
         "extra_vars": {
           "incident_sys_id": "${trigger.incident_sys_id}",
           "incident_state": "6",
-          "work_notes": "[AUTOMATED — Remediation Complete] The AI agent identified and executed the appropriate remediation. ${remediate_agent.result.content}"
+          "work_notes": "[AUTOMATED — Remediation Complete] The AI agent identified and executed the appropriate fix via AAP."
         }
       },
       "position": {
-        "x": 2000,
-        "y": 300
+        "x": 2400,
+        "y": 200
+      }
+    },
+    {
+      "id": "update_snow_no_fix",
+      "type": "aap_job_template",
+      "name": "Update SNOW (No Fix Found)",
+      "parameters": {
+        "job_template_name": "Update SNOW Ticket",
+        "organization_name": "Default",
+        "extra_vars": {
+          "incident_sys_id": "${trigger.incident_sys_id}",
+          "work_notes": "[AUTOMATED — No Automated Fix Available] The AI agent could not find a suitable job template to remediate this issue. Manual intervention is required. Please review the root cause analysis above for remediation guidance."
+        }
+      },
+      "position": {
+        "x": 2400,
+        "y": 400
       }
     }
   ],
@@ -118,6 +158,8 @@
     { "from": "gather_diagnostics", "to": "rca_agent" },
     { "from": "rca_agent", "to": "update_snow_rca" },
     { "from": "update_snow_rca", "to": "remediate_agent" },
-    { "from": "remediate_agent", "to": "update_snow_resolved" }
+    { "from": "remediate_agent", "to": "route_switch" },
+    { "from": "route_switch", "to": "update_snow_resolved", "from_port": "case_fixed" },
+    { "from": "route_switch", "to": "update_snow_no_fix", "from_port": "case_no_fix" }
   ]
 }

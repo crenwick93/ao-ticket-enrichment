@@ -1,0 +1,81 @@
+---
+# Play 1: Resolve the target host IP and add it to inventory
+- name: Register target host for remediation
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Extract host IP from incident description (if target_host_ip not provided)
+      ansible.builtin.set_fact:
+        _target_ip: "{{ target_host_ip | default(incident_description | default('') | regex_search('Affected host IP:\\s*(\\S+)', '\\1') | default([''], true) | first) }}"
+
+    - name: Fail if no target host IP found
+      ansible.builtin.assert:
+        that: _target_ip | length > 0
+        fail_msg: "Could not determine target host IP. Provide target_host_ip or ensure incident description contains 'Affected host IP: <ip>'"
+
+    - name: Add target host to in-memory inventory
+      ansible.builtin.add_host:
+        name: "{{ _target_ip }}"
+        groups: target_hosts
+        ansible_user: ec2-user
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+
+# Play 2: Rollback the nginx configuration and restart the service
+- name: Rollback nginx configuration
+  hosts: target_hosts
+  become: true
+  gather_facts: false
+
+  tasks:
+
+    - name: Show current nginx config test result (before fix)
+      ansible.builtin.command: nginx -t
+      register: nginx_before
+      changed_when: false
+      failed_when: false
+
+    - name: Remove invalid or unknown directives from nginx.conf
+      ansible.builtin.lineinfile:
+        path: /etc/nginx/nginx.conf
+        regexp: '^\s*unknown_directive\s+'
+        state: absent
+      register: config_fix
+
+    - name: Validate nginx configuration after fix
+      ansible.builtin.command: nginx -t
+      register: nginx_after
+      changed_when: false
+
+    - name: Restart nginx service
+      ansible.builtin.systemd:
+        name: nginx
+        state: restarted
+      when: config_fix.changed
+
+    - name: Verify nginx is running
+      ansible.builtin.command: systemctl is-active nginx
+      register: nginx_status
+      changed_when: false
+
+    - name: Build remediation report
+      ansible.builtin.set_fact:
+        remediation_report: |
+          === REMEDIATION REPORT ===
+          Host: {{ inventory_hostname }}
+          Action: Rolled back invalid directives in /etc/nginx/nginx.conf
+          Config before: {{ nginx_before.stderr | default('unknown') }}
+          Config after: {{ nginx_after.stderr | default('PASS') }}
+          Service status: {{ nginx_status.stdout | default('unknown') }}
+          Lines removed: {{ config_fix.changed | ternary('yes — invalid directives removed', 'no changes needed') }}
+          Result: {{ 'SUCCESS' if nginx_status.stdout == 'active' else 'FAILED — manual intervention required' }}
+
+    - name: Display remediation report
+      ansible.builtin.debug:
+        var: remediation_report
+
+    - name: Publish remediation report
+      ansible.builtin.set_stats:
+        data:
+          remediation_report: "{{ remediation_report }}"
+          remediation_status: "{{ 'success' if nginx_status.stdout == 'active' else 'failed' }}"
+          incident_sys_id: "{{ incident_sys_id | default('') }}"

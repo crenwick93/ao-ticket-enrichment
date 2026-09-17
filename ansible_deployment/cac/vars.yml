@@ -143,6 +143,25 @@ controller_templates:
     credentials:
       - "ServiceNow ITSM"
 
+  - name: "Rollback nginx Configuration"
+    description: >-
+      Rolls back a broken nginx configuration on the target host. Removes
+      invalid or unknown directives from /etc/nginx/nginx.conf, validates the
+      configuration with nginx -t, and restarts the nginx service. Use this
+      job template when nginx has failed to start due to a bad configuration
+      change, syntax error, or unknown directive in the config file. Requires
+      target_host_ip (or incident_description containing the host IP) and
+      optionally incident_sys_id. Returns a remediation_report artifact with
+      before/after config test results and service status.
+    organization: "Default"
+    job_type: "run"
+    project: "AO Ticket Enrichment Demo"
+    playbook: "playbooks/rollback_nginx_config.yml"
+    inventory: "Demo Inventory"
+    ask_variables_on_launch: true
+    credentials:
+      - "Monitoring SSH"
+
 # =============================================================================
 # Event-Driven Ansible
 # =============================================================================

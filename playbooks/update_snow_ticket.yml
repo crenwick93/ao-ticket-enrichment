@@ -12,16 +12,22 @@
           - incident_sys_id | length > 0
         fail_msg: "incident_sys_id must be provided"
 
-    - name: Update incident with work notes and resolve
+    - name: Add work notes before resolving
       servicenow.itsm.incident:
         sys_id: "{{ incident_sys_id }}"
-        state: resolved
-        close_code: "Solved (Permanently)"
-        close_notes: "{{ close_notes | default(work_notes | default('Resolved by automated remediation')) }}"
         other:
           work_notes: "[code]{{ work_notes }}[/code]"
       when:
         - work_notes | default('') | length > 0
+        - incident_state | default('') | string in ['6', 'resolved']
+
+    - name: Resolve incident
+      servicenow.itsm.incident:
+        sys_id: "{{ incident_sys_id }}"
+        state: resolved
+        close_code: "Solved (Permanently)"
+        close_notes: "{{ close_notes | default('Resolved by automated remediation') }}"
+      when:
         - incident_state | default('') | string in ['6', 'resolved']
 
     - name: Update incident with work notes and state change

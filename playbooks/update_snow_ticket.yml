@@ -27,10 +27,8 @@
         other:
           incident_state: "6"
           state: "6"
-          close_code: "Solved (Permanently)"
-          resolution_code: "Solved (Permanently)"
+          close_code: "Solution provided"
           close_notes: "{{ close_notes | default('Resolved by automated remediation') }}"
-          resolved_by: "admin"
       when:
         - incident_state | default('') | string in ['6', 'resolved']
 

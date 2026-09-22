@@ -2,14 +2,14 @@
 
 ## Pre-Demo Checklist
 
-- [ ] EC2 instance running, nginx healthy: http://34.246.108.129
-- [ ] Prometheus targets green: http://34.246.108.129:9090/targets
+- [ ] EC2 instance running, nginx healthy: http://108.131.238.127
+- [ ] Prometheus targets green: http://108.131.238.127:9090/targets
 - [ ] EDA rulebook activation running in AAP
 - [ ] AO workflow published
 - [ ] ServiceNow PDI clean (resolve/delete old demo incidents)
 - [ ] Browser tabs ready:
   - Terminal (SSH)
-  - Prometheus Alerts: http://34.246.108.129:9090/alerts
+  - Prometheus Alerts: http://108.131.238.127:9090/alerts
   - AAP Jobs
   - AO Executions
   - ServiceNow Incidents
@@ -18,17 +18,17 @@
 
 ## Scene 1: Show the Healthy State (60 seconds)
 
-**Browser → http://34.246.108.129**
+**Browser → http://108.131.238.127**
 
 > "We have a RHEL 9 instance running nginx, serving a simple web page.
 > It's monitored by Prometheus with a 15-second alert rule — if nginx
 > goes down, the full chain fires automatically."
 
-**Browser → http://34.246.108.129:9090/targets**
+**Browser → http://108.131.238.127:9090/targets**
 
 > "Prometheus is scraping Node Exporter every 10 seconds. All targets healthy."
 
-**Browser → http://34.246.108.129:9090/alerts**
+**Browser → http://108.131.238.127:9090/alerts**
 
 > "Our `ServiceDown_nginx` alert is currently green — inactive."
 
@@ -39,7 +39,7 @@
 **Terminal — SSH to the instance:**
 
 ```bash
-ssh -i setup/terraform/demo-key.pem ec2-user@34.246.108.129
+ssh -i setup/terraform/demo-key.pem ec2-user@108.131.238.127
 ```
 
 **Show the current healthy config:**
@@ -75,7 +75,7 @@ sudo nginx -t
 
 ## Scene 3: Watch Prometheus Detect (30 seconds)
 
-**Browser → http://34.246.108.129:9090/alerts**
+**Browser → http://108.131.238.127:9090/alerts**
 
 > "Within 15 seconds, Prometheus detects nginx.service is down.
 > The `ServiceDown_nginx` alert goes to PENDING, then FIRING."
@@ -98,7 +98,7 @@ sudo nginx -t
 **Point out:**
 - Impact: 1 - High
 - Urgency: 1 - High
-- Description mentions "Affected host IP: 34.246.108.129"
+- Description mentions "Affected host IP: 108.131.238.127"
 
 > "Now Event-Driven Ansible is polling ServiceNow. It picks up this
 > new incident and triggers the AO workflow."
@@ -166,7 +166,7 @@ sudo systemctl restart nginx
 exit
 ```
 
-**Browser → http://34.246.108.129 → page loads again**
+**Browser → http://108.131.238.127 → page loads again**
 
 > "Fixed. In production, the team would follow the AI's remediation
 > steps. The incident has the full audit trail."

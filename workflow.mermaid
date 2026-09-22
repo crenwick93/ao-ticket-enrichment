@@ -1,13 +1,34 @@
+%% Workflow 1: Ticket Enrichment
 flowchart LR
-  NGINX["nginx fails"] --> PROM["Prometheus detects"]
-  PROM --> ALERT["AlertManager fires"]
-  ALERT --> BRIDGE["Webhook Bridge"]
-  BRIDGE --> SNOW["ServiceNow Incident"]
-  SNOW -->|"EDA polls"| EDA["EDA Rulebook"]
-  EDA -->|"run_job_template"| BRG["Bridge: Trigger AO Workflow"]
-  BRG -->|"1. OAuth2 token"| TOK["AO /api/v1/auth/token"]
-  BRG -->|"2. POST payload"| AO["AO EDA Trigger Endpoint"]
+  subgraph "Alert Chain"
+    NGINX["nginx fails"] --> PROM["Prometheus detects"]
+    PROM --> ALERT["AlertManager fires"]
+    ALERT --> BRIDGE["Webhook Bridge"]
+    BRIDGE --> SNOW["ServiceNow Incident"]
+  end
 
-  AO --> DIAG["Gather Diagnostics (AAP Job)"]
-  DIAG --> RCA["AI: Root Cause Analysis"]
-  RCA --> UPDATE["Update SNOW Ticket (AAP Job)"]
+  subgraph "EDA"
+    SNOW -->|"polls every 10s"| EDA["EDA Rulebook"]
+    EDA -->|"run_job_template"| BRG["Bridge: Trigger AO"]
+  end
+
+  subgraph "AO Workflow: Enrichment"
+    BRG -->|"OAuth2 + POST"| AO["AO EDA Trigger"]
+    AO --> DIAG["Gather Diagnostics"]
+    DIAG --> RCA["AI: Root Cause Analysis"]
+    RCA --> UPDATE["Update SNOW (RCA)"]
+  end
+
+---
+
+%% Workflow 2: Ticket Enrichment + Remediation
+flowchart LR
+  subgraph "AO Workflow: Remediation"
+    DIAG2["Gather Diagnostics"] --> RCA2["AI: RCA"]
+    RCA2 --> UPDATE_RCA["Update SNOW (RCA)"]
+    UPDATE_RCA --> SEARCH["AI: Search Automation Catalog"]
+    SEARCH --> SWITCH{"Remediation Available?"}
+    SWITCH -->|"Found"| RUN["Run Remediation"]
+    RUN --> RESOLVED["Update SNOW (Remediated)"]
+    SWITCH -->|"Not Found"| NOFIX["Update SNOW (No Remediation)"]
+  end

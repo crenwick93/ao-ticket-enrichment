@@ -34,11 +34,50 @@
       changed_when: false
       failed_when: false
 
-    - name: Remove invalid or unknown directives from nginx.conf
-      ansible.builtin.lineinfile:
-        path: /etc/nginx/nginx.conf
-        regexp: '^\s*unknown_directive\s+'
-        state: absent
+    - name: Deploy known-good nginx configuration
+      ansible.builtin.copy:
+        content: |
+          user nginx;
+          worker_processes auto;
+          error_log /var/log/nginx/error.log;
+          pid /run/nginx.pid;
+
+          include /usr/share/nginx/modules/*.conf;
+
+          events {
+              worker_connections 1024;
+          }
+
+          http {
+              log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                                '$status $body_bytes_sent "$http_referer" '
+                                '"$http_user_agent" "$http_x_forwarded_for"';
+
+              access_log  /var/log/nginx/access.log  main;
+
+              sendfile            on;
+              tcp_nopush          on;
+              keepalive_timeout   65;
+              types_hash_max_size 4096;
+
+              include             /etc/nginx/mime.types;
+              default_type        application/octet-stream;
+
+              server {
+                  listen       80 default_server;
+                  listen       [::]:80 default_server;
+                  server_name  _;
+                  root         /usr/share/nginx/html;
+
+                  location / {
+                      index index.html;
+                  }
+              }
+          }
+        dest: /etc/nginx/nginx.conf
+        owner: root
+        group: root
+        mode: "0644"
       register: config_fix
 
     - name: Validate nginx configuration after fix
@@ -50,7 +89,6 @@
       ansible.builtin.systemd:
         name: nginx
         state: restarted
-      when: config_fix.changed
 
     - name: Verify nginx is running
       ansible.builtin.command: systemctl is-active nginx
@@ -62,11 +100,11 @@
         remediation_report: |
           === REMEDIATION REPORT ===
           Host: {{ inventory_hostname }}
-          Action: Rolled back invalid directives in /etc/nginx/nginx.conf
+          Action: Replaced nginx.conf with known-good configuration
           Config before: {{ nginx_before.stderr | default('unknown') }}
           Config after: {{ nginx_after.stderr | default('PASS') }}
           Service status: {{ nginx_status.stdout | default('unknown') }}
-          Lines removed: {{ config_fix.changed | ternary('yes — invalid directives removed', 'no changes needed') }}
+          Config restored: {{ config_fix.changed | ternary('yes — known-good config deployed', 'config was already correct') }}
           Result: {{ 'SUCCESS' if nginx_status.stdout == 'active' else 'FAILED — manual intervention required' }}
 
     - name: Display remediation report

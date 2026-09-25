@@ -115,7 +115,8 @@
           "inc_sys_id": "${trigger.incident_sys_id}",
           "implementation_plan": "Automated by Ansible Automation Platform and Automation Orchestrator.\n\nWhen this CR is approved and moved to Implement in ServiceNow, EDA will detect the state change and automatically resume the AO workflow to execute: ${select_fix_agent.result.content.fix_template_name}",
           "backout_plan": "Investigate failure in AAP job output. The rollback playbook deploys a known-good configuration — manual rollback is unlikely to be needed.",
-          "test_plan": "Automated post-checks: nginx -t config validation, systemctl is-active nginx, HTTP health check."
+          "test_plan": "Automated post-checks: nginx -t config validation, systemctl is-active nginx, HTTP health check.",
+          "fix_template_name": "${select_fix_agent.result.content.fix_template_name}"
         }
       },
       "position": { "x": 2400, "y": 200 }

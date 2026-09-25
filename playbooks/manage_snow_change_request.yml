@@ -63,6 +63,17 @@
           assigned_to: "{{ servicenow_approver | default('admin') }}"
       when: action == 'create'
 
+    - name: Update incident with CR reference
+      servicenow.itsm.incident:
+        sys_id: "{{ inc_sys_id }}"
+        other:
+          work_notes: >-
+            [AUTOMATED] AI recommends running {{ fix_template_name | default('automated remediation') }}.
+            Emergency Change Request {{ cr_result.record.number }} raised — awaiting approval before remediation proceeds.
+      when:
+        - action == 'create'
+        - inc_sys_id is defined
+
     - name: Display created CR
       ansible.builtin.debug:
         msg: |

@@ -36,7 +36,7 @@
     - name: Create emergency Change Request
       servicenow.itsm.change_request:
         type: emergency
-        state: new
+        state: authorize
         short_description: "{{ short_description }}"
         description: "{{ description | default(omit) }}"
         priority: "{{ cr_priority | default(1) }}"
@@ -46,6 +46,8 @@
         assignment_group: "{{ cr_assignment_group | default('CAB Approval') }}"
         other:
           parent: "{{ inc_sys_id | default(omit) }}"
+          approval: requested
+          assigned_to: "{{ servicenow_approver | default('admin') }}"
           justification: "{{ justification | default('Automated remediation — see description for details.') }}"
           implementation_plan: "{{ implementation_plan | default('Automated by Ansible Automation Platform and Automation Orchestrator.') }}"
           backout_plan: "{{ backout_plan | default('Investigate failure in AAP job output. Rollback manually if needed.') }}"

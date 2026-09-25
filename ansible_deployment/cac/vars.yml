@@ -291,7 +291,7 @@ eda_credentials:
     credential_type: "Red Hat Ansible Automation Platform"
     organization: "Default"
     inputs:
-      host: "{{ (aap_hostname | regex_replace('/+$','')) ~ '/api/controller/' }}"
+      host: "{{ eda_controller_host | default('http://aap.aap-operator.svc.cluster.local/api/controller/') }}"
       oauth_token: "{{ aap_token }}"
       verify_ssl: false
 

@@ -121,20 +121,6 @@
       "position": { "x": 2400, "y": 200 }
     },
     {
-      "id": "authorize_cr",
-      "type": "aap_job_template",
-      "name": "Authorize CR",
-      "parameters": {
-        "job_template_name": "Manage SNOW Change Request",
-        "organization_name": "Default",
-        "extra_vars": {
-          "action": "authorize",
-          "cr_number": "${create_cr.artifacts.cr_number}"
-        }
-      },
-      "position": { "x": 2800, "y": 200 }
-    },
-    {
       "id": "approval_gate",
       "type": "approval",
       "name": "Awaiting CR Approval",
@@ -142,7 +128,7 @@
         "description": "Waiting for ServiceNow Change Request ${create_cr.artifacts.cr_number} approval. EDA will auto-approve this node when the CR is moved to Implement in ServiceNow.",
         "timeout": 0
       },
-      "position": { "x": 3200, "y": 200 }
+      "position": { "x": 2800, "y": 200 }
     },
     {
       "id": "run_fix",
@@ -196,8 +182,7 @@
     { "from": "update_snow_rca", "to": "select_fix_agent" },
     { "from": "select_fix_agent", "to": "route_switch" },
     { "from": "route_switch", "to": "create_cr", "from_port": "case_fix" },
-    { "from": "create_cr", "to": "authorize_cr" },
-    { "from": "authorize_cr", "to": "approval_gate" },
+    { "from": "create_cr", "to": "approval_gate" },
     { "from": "approval_gate", "to": "run_fix", "from_port": "approved" },
     { "from": "run_fix", "to": "resolve_incident" },
     { "from": "route_switch", "to": "update_snow_no_fix", "from_port": "case_no_fix" }

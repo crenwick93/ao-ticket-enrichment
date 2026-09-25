@@ -1,0 +1,205 @@
+{
+  "schema_version": "2.0.0",
+  "name": "Ticket Enrichment + Remediation + Approval",
+  "description": "Full incident lifecycle: gathers diagnostics, AI root cause analysis, updates SNOW, AI searches automation catalog, raises a Change Request for approval, waits for SNOW CR approval (bridged by EDA), then runs the remediation and resolves the incident.",
+  "triggers": [
+    {
+      "id": "trigger_eda",
+      "type": "eda_trigger",
+      "name": "Incident Alert (EDA)",
+      "parameters": {
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "incident_number": {
+              "type": "string",
+              "description": "ServiceNow incident number"
+            },
+            "incident_sys_id": {
+              "type": "string",
+              "description": "ServiceNow incident sys_id"
+            },
+            "incident_description": {
+              "type": "string",
+              "description": "Combined short_description + description from the incident"
+            }
+          }
+        }
+      },
+      "position": { "x": 0, "y": 300 }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "gather_diagnostics",
+      "type": "aap_job_template",
+      "name": "Gather Diagnostics",
+      "parameters": {
+        "job_template_name": "Gather Diagnostics",
+        "organization_name": "Default",
+        "extra_vars": {
+          "incident_sys_id": "${trigger.incident_sys_id}",
+          "incident_description": "${trigger.incident_description}"
+        }
+      },
+      "position": { "x": 400, "y": 300 }
+    },
+    {
+      "id": "rca_agent",
+      "type": "agentic",
+      "name": "AI: Root Cause Analysis",
+      "parameters": {
+        "model": "llama-scout-17b",
+        "prompt": "You are an expert Linux systems engineer writing a ServiceNow work note. Format your ENTIRE response as HTML using <h3> for headings, <p> for paragraphs, <ul>/<li> for lists, <code> for commands, and <pre style=\"white-space: pre-wrap; word-wrap: break-word;\"> for log excerpts. Do NOT explain your formatting choices. Do NOT use markdown. Just write the analysis directly in HTML.\n\nA ServiceNow incident has been raised and system diagnostics have been collected from the affected host. Analyse the diagnostics and provide root cause analysis, evidence from logs, remediation steps with specific commands, and prevention recommendations.\n\nIncident: ${trigger.incident_number}\nDescription: ${trigger.incident_description}\n\nDiagnostics:\n${gather_diagnostics.artifacts.diagnostics_report}"
+      },
+      "position": { "x": 800, "y": 300 }
+    },
+    {
+      "id": "update_snow_rca",
+      "type": "aap_job_template",
+      "name": "Update SNOW (RCA)",
+      "parameters": {
+        "job_template_name": "Manage SNOW Incident",
+        "organization_name": "Default",
+        "extra_vars": {
+          "action": "update",
+          "inc_sys_id": "${trigger.incident_sys_id}",
+          "incident_state": "2",
+          "work_notes": "[AUTOMATED — AI Root Cause Analysis]${rca_agent.result.content.analysis}"
+        }
+      },
+      "position": { "x": 1200, "y": 300 }
+    },
+    {
+      "id": "select_fix_agent",
+      "type": "agentic",
+      "name": "AI: Search Automation Catalog",
+      "parameters": {
+        "model": "llama-scout-17b",
+        "prompt": "You are an IT operations automation agent. A ServiceNow incident has been analysed and root cause identified. Your job is to find the correct AAP job template that can fix this issue.\n\nIncident: ${trigger.incident_number}\nDescription: ${trigger.incident_description}\nDiagnostics: ${gather_diagnostics.artifacts.diagnostics_report}\n\nSteps:\n1. Use the AAP MCP tools to list available job templates\n2. Read the descriptions carefully to find the one that can fix this specific issue\n3. If you find a matching job template, set fix_template_name to the exact name of that job template, set fix_available to 'yes', and explain why you selected it in fix_reason\n4. If no suitable job template exists, set fix_available to 'no' and explain what kind of remediation would be needed in fix_reason\n\nfix_reason must always be a descriptive sentence. Never just 'yes' or 'no'.\nDo NOT run the job template. Just identify the correct one."
+      },
+      "position": { "x": 1600, "y": 300 }
+    },
+    {
+      "id": "route_switch",
+      "type": "switch",
+      "name": "Remediation Available?",
+      "parameters": {
+        "cases": [
+          {
+            "port": "case_fix",
+            "label": "Remediation Found",
+            "condition": "${select_fix_agent.result.content.fix_available} == 'yes'"
+          },
+          {
+            "port": "case_no_fix",
+            "label": "No Remediation Available",
+            "condition": "${select_fix_agent.result.content.fix_available} == 'no'"
+          }
+        ]
+      },
+      "position": { "x": 2000, "y": 300 }
+    },
+    {
+      "id": "create_cr",
+      "type": "aap_job_template",
+      "name": "Create Change Request",
+      "parameters": {
+        "job_template_name": "Manage SNOW Change Request",
+        "organization_name": "Default",
+        "extra_vars": {
+          "action": "create",
+          "short_description": "Automated Remediation — ${trigger.incident_number} — nginx configuration rollback",
+          "description": "An automated remediation has been identified for incident ${trigger.incident_number}.\n\nRoot Cause: ${rca_agent.result.content.analysis}\n\nProposed Fix: ${select_fix_agent.result.content.fix_template_name}\nReason: ${select_fix_agent.result.content.fix_reason}",
+          "justification": "AI root cause analysis identified the issue and found an automated remediation in the AAP catalog: ${select_fix_agent.result.content.fix_template_name}. Approval is required before executing.",
+          "inc_sys_id": "${trigger.incident_sys_id}",
+          "implementation_plan": "Automated by Ansible Automation Platform and Automation Orchestrator.\n\nWhen this CR is approved and moved to Implement in ServiceNow, EDA will detect the state change and automatically resume the AO workflow to execute: ${select_fix_agent.result.content.fix_template_name}",
+          "backout_plan": "Investigate failure in AAP job output. The rollback playbook deploys a known-good configuration — manual rollback is unlikely to be needed.",
+          "test_plan": "Automated post-checks: nginx -t config validation, systemctl is-active nginx, HTTP health check."
+        }
+      },
+      "position": { "x": 2400, "y": 200 }
+    },
+    {
+      "id": "authorize_cr",
+      "type": "aap_job_template",
+      "name": "Authorize CR",
+      "parameters": {
+        "job_template_name": "Manage SNOW Change Request",
+        "organization_name": "Default",
+        "extra_vars": {
+          "action": "authorize",
+          "cr_number": "${create_cr.artifacts.cr_number}"
+        }
+      },
+      "position": { "x": 2800, "y": 200 }
+    },
+    {
+      "id": "approval_gate",
+      "type": "approval",
+      "name": "Awaiting CR Approval",
+      "parameters": {
+        "description": "Waiting for ServiceNow Change Request ${create_cr.artifacts.cr_number} approval. EDA will auto-approve this node when the CR is moved to Implement in ServiceNow.",
+        "timeout": 0
+      },
+      "position": { "x": 3200, "y": 200 }
+    },
+    {
+      "id": "run_fix",
+      "type": "aap_job_template",
+      "name": "Run Remediation",
+      "parameters": {
+        "job_template_name": "${select_fix_agent.result.content.fix_template_name}",
+        "organization_name": "Default",
+        "extra_vars": {
+          "incident_sys_id": "${trigger.incident_sys_id}",
+          "incident_description": "${trigger.incident_description}"
+        }
+      },
+      "position": { "x": 3600, "y": 200 }
+    },
+    {
+      "id": "resolve_incident",
+      "type": "aap_job_template",
+      "name": "Resolve Incident",
+      "parameters": {
+        "job_template_name": "Manage SNOW Incident",
+        "organization_name": "Default",
+        "extra_vars": {
+          "action": "resolve",
+          "inc_sys_id": "${trigger.incident_sys_id}",
+          "work_notes": "[AUTOMATED — Remediation Complete] Automated remediation applied using: ${select_fix_agent.result.content.fix_template_name}. CR: ${create_cr.artifacts.cr_number}"
+        }
+      },
+      "position": { "x": 4000, "y": 200 }
+    },
+    {
+      "id": "update_snow_no_fix",
+      "type": "aap_job_template",
+      "name": "Update SNOW (No Remediation)",
+      "parameters": {
+        "job_template_name": "Manage SNOW Incident",
+        "organization_name": "Default",
+        "extra_vars": {
+          "action": "update",
+          "inc_sys_id": "${trigger.incident_sys_id}",
+          "work_notes": "[AUTOMATED — No Automated Remediation Available] The AI agent searched the automation catalog but could not find a suitable remediation. Reason: ${select_fix_agent.result.content.fix_reason}. Manual intervention required."
+        }
+      },
+      "position": { "x": 2400, "y": 400 }
+    }
+  ],
+  "edges": [
+    { "from": "trigger_eda", "to": "gather_diagnostics" },
+    { "from": "gather_diagnostics", "to": "rca_agent" },
+    { "from": "rca_agent", "to": "update_snow_rca" },
+    { "from": "update_snow_rca", "to": "select_fix_agent" },
+    { "from": "select_fix_agent", "to": "route_switch" },
+    { "from": "route_switch", "to": "create_cr", "from_port": "case_fix" },
+    { "from": "create_cr", "to": "authorize_cr" },
+    { "from": "authorize_cr", "to": "approval_gate" },
+    { "from": "approval_gate", "to": "run_fix", "from_port": "approved" },
+    { "from": "run_fix", "to": "resolve_incident" },
+    { "from": "route_switch", "to": "update_snow_no_fix", "from_port": "case_no_fix" }
+  ]
+}

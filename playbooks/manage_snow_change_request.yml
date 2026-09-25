@@ -1,0 +1,168 @@
+---
+# Unified ServiceNow change request management playbook.
+# Handles all CR lifecycle operations via the `action` variable.
+#
+# Actions:
+#   create    — Create emergency CR with justification, impl/backout/test plans.
+#               Publishes cr_sys_id and cr_number via set_stats.
+#   authorize — Move CR to authorize state and request approval.
+#   update    — Add work notes to an existing CR.
+#   review    — Move CR to review state.
+#   close     — Close the CR.
+#
+# Usage from AO workflow extra_vars:
+#   { "action": "create", "short_description": "...", "justification": "..." }
+#   { "action": "authorize", "cr_number": "..." }
+#   { "action": "update", "cr_sys_id": "...", "work_notes": "..." }
+#   { "action": "review", "cr_sys_id": "..." }
+#   { "action": "close", "cr_sys_id": "..." }
+
+- name: Manage ServiceNow Change Request
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Validate action
+      ansible.builtin.assert:
+        that:
+          - action is defined
+          - action in ['create', 'authorize', 'update', 'review', 'close']
+        fail_msg: "action must be one of: create, authorize, update, review, close"
+
+    # =========================================================================
+    # ACTION: create
+    # =========================================================================
+    - name: Create emergency Change Request
+      servicenow.itsm.change_request:
+        type: emergency
+        state: new
+        short_description: "{{ short_description }}"
+        description: "{{ description | default(omit) }}"
+        priority: "{{ cr_priority | default(1) }}"
+        risk: "{{ cr_risk | default('low') }}"
+        impact: "{{ cr_impact | default(2) }}"
+        category: "{{ cr_category | default('Software') }}"
+        assignment_group: "{{ cr_assignment_group | default('CAB Approval') }}"
+        other:
+          parent: "{{ inc_sys_id | default(omit) }}"
+          justification: "{{ justification | default('Automated remediation — see description for details.') }}"
+          implementation_plan: "{{ implementation_plan | default('Automated by Ansible Automation Platform and Automation Orchestrator.') }}"
+          backout_plan: "{{ backout_plan | default('Investigate failure in AAP job output. Rollback manually if needed.') }}"
+          test_plan: "{{ test_plan | default('Automated post-checks will verify service health and system state.') }}"
+      register: cr_result
+      when: action == 'create'
+
+    - name: Display created CR
+      ansible.builtin.debug:
+        msg: |
+          === Emergency Change Request Created ===
+          Number: {{ cr_result.record.number }}
+          Sys ID: {{ cr_result.record.sys_id }}
+      when: action == 'create'
+
+    - name: Publish CR identifiers
+      ansible.builtin.set_stats:
+        data:
+          cr_sys_id: "{{ cr_result.record.sys_id }}"
+          cr_number: "{{ cr_result.record.number }}"
+        aggregate: false
+      when: action == 'create'
+
+    # =========================================================================
+    # ACTION: authorize
+    # =========================================================================
+    - name: Validate authorize parameters
+      ansible.builtin.assert:
+        that:
+          - cr_number is defined
+          - cr_number | length > 0
+        fail_msg: "cr_number must be provided for authorize action"
+      when: action == 'authorize'
+
+    - name: Progress CR to Authorize and request approval
+      servicenow.itsm.change_request:
+        number: "{{ cr_number }}"
+        state: authorize
+        assignment_group: "{{ cr_assignment_group | default('CAB Approval') }}"
+        other:
+          approval: requested
+          assigned_to: "{{ servicenow_approver | default('admin') }}"
+      when: action == 'authorize'
+
+    - name: Display authorize confirmation
+      ansible.builtin.debug:
+        msg: "CR {{ cr_number }} moved to Authorize — awaiting approval"
+      when: action == 'authorize'
+
+    # =========================================================================
+    # ACTION: update
+    # =========================================================================
+    - name: Validate update parameters
+      ansible.builtin.assert:
+        that:
+          - cr_sys_id is defined
+          - cr_sys_id | length > 0
+          - work_notes is defined
+        fail_msg: "cr_sys_id and work_notes must be provided for update action"
+      when: action == 'update'
+
+    - name: Add work notes to CR
+      servicenow.itsm.change_request:
+        sys_id: "{{ cr_sys_id }}"
+        other:
+          work_notes: "{{ work_notes }}"
+      when: action == 'update'
+
+    - name: Display update confirmation
+      ansible.builtin.debug:
+        msg: "CR {{ cr_sys_id }} updated with work notes"
+      when: action == 'update'
+
+    # =========================================================================
+    # ACTION: review
+    # =========================================================================
+    - name: Validate review parameters
+      ansible.builtin.assert:
+        that:
+          - cr_sys_id is defined
+          - cr_sys_id | length > 0
+        fail_msg: "cr_sys_id must be provided for review action"
+      when: action == 'review'
+
+    - name: Move CR to Review
+      servicenow.itsm.change_request:
+        sys_id: "{{ cr_sys_id }}"
+        state: review
+        other:
+          work_notes: "{{ work_notes | default('[AUTOMATED] Implementation complete — ready for review.') }}"
+      when: action == 'review'
+
+    - name: Display review confirmation
+      ansible.builtin.debug:
+        msg: "CR {{ cr_sys_id }} moved to Review"
+      when: action == 'review'
+
+    # =========================================================================
+    # ACTION: close
+    # =========================================================================
+    - name: Validate close parameters
+      ansible.builtin.assert:
+        that:
+          - cr_sys_id is defined
+          - cr_sys_id | length > 0
+        fail_msg: "cr_sys_id must be provided for close action"
+      when: action == 'close'
+
+    - name: Close CR
+      servicenow.itsm.change_request:
+        sys_id: "{{ cr_sys_id }}"
+        state: closed
+        close_code: "{{ cr_close_code | default('successful') }}"
+        close_notes: "{{ close_notes | default('Closed by automated workflow.') }}"
+      when: action == 'close'
+
+    - name: Display close confirmation
+      ansible.builtin.debug:
+        msg: "CR {{ cr_sys_id }} closed"
+      when: action == 'close'

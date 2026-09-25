@@ -1,0 +1,142 @@
+---
+# Unified ServiceNow incident management playbook.
+# Handles all incident lifecycle operations via the `action` variable.
+#
+# Actions:
+#   create  — Create a new incident, publish inc_sys_id and inc_number via set_stats
+#   update  — Add work notes (wrapped in [code] tags) and optional state change
+#   resolve — Two-step resolve: add work notes first, then close with close_code
+#
+# Usage from AO workflow extra_vars:
+#   { "action": "create", "short_description": "...", "description": "..." }
+#   { "action": "update", "inc_sys_id": "...", "work_notes": "..." }
+#   { "action": "resolve", "inc_sys_id": "...", "work_notes": "..." }
+
+- name: Manage ServiceNow Incident
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Validate action
+      ansible.builtin.assert:
+        that:
+          - action is defined
+          - action in ['create', 'update', 'resolve']
+        fail_msg: "action must be one of: create, update, resolve"
+
+    # =========================================================================
+    # ACTION: create
+    # =========================================================================
+    - name: Create incident
+      servicenow.itsm.incident:
+        state: new
+        impact: "{{ incident_impact | default('high') }}"
+        urgency: "{{ incident_urgency | default('high') }}"
+        short_description: "{{ short_description }}"
+        description: "{{ description | default(omit) }}"
+        caller: "{{ servicenow_caller | default('admin') }}"
+        other:
+          category: "{{ incident_category | default('Software') }}"
+          subcategory: "{{ incident_subcategory | default(omit) }}"
+      register: inc_result
+      when: action == 'create'
+
+    - name: Display created incident
+      ansible.builtin.debug:
+        msg: |
+          === Incident Created ===
+          Number: {{ inc_result.record.number }}
+          Sys ID: {{ inc_result.record.sys_id }}
+      when: action == 'create'
+
+    - name: Publish incident identifiers
+      ansible.builtin.set_stats:
+        data:
+          inc_sys_id: "{{ inc_result.record.sys_id }}"
+          inc_number: "{{ inc_result.record.number }}"
+        aggregate: false
+      when: action == 'create'
+
+    # =========================================================================
+    # ACTION: update
+    # =========================================================================
+    - name: Validate update parameters
+      ansible.builtin.assert:
+        that:
+          - inc_sys_id is defined
+          - inc_sys_id | length > 0
+        fail_msg: "inc_sys_id must be provided for update action"
+      when: action == 'update'
+
+    - name: Update incident with work notes and state change
+      servicenow.itsm.incident:
+        sys_id: "{{ inc_sys_id }}"
+        state: "{{ incident_state }}"
+        other:
+          work_notes: "[code]{{ work_notes }}[/code]"
+      when:
+        - action == 'update'
+        - work_notes | default('') | length > 0
+        - incident_state | default('') | length > 0
+
+    - name: Update incident with work notes only
+      servicenow.itsm.incident:
+        sys_id: "{{ inc_sys_id }}"
+        other:
+          work_notes: "[code]{{ work_notes }}[/code]"
+      when:
+        - action == 'update'
+        - work_notes | default('') | length > 0
+        - incident_state | default('') | length == 0
+
+    - name: Update incident state only
+      servicenow.itsm.incident:
+        sys_id: "{{ inc_sys_id }}"
+        state: "{{ incident_state }}"
+      when:
+        - action == 'update'
+        - work_notes | default('') | length == 0
+        - incident_state | default('') | length > 0
+
+    - name: Display update confirmation
+      ansible.builtin.debug:
+        msg: "Incident {{ inc_sys_id }} updated (state={{ incident_state | default('unchanged') }})"
+      when: action == 'update'
+
+    # =========================================================================
+    # ACTION: resolve
+    # Two-step: add work notes first, then resolve. A single call gets rejected
+    # by ServiceNow PDI — this is a known gotcha.
+    # =========================================================================
+    - name: Validate resolve parameters
+      ansible.builtin.assert:
+        that:
+          - inc_sys_id is defined
+          - inc_sys_id | length > 0
+        fail_msg: "inc_sys_id must be provided for resolve action"
+      when: action == 'resolve'
+
+    - name: Add work notes before resolving
+      servicenow.itsm.incident:
+        sys_id: "{{ inc_sys_id }}"
+        other:
+          work_notes: "[code]{{ work_notes }}[/code]"
+      when:
+        - action == 'resolve'
+        - work_notes | default('') | length > 0
+
+    - name: Resolve incident
+      servicenow.itsm.incident:
+        sys_id: "{{ inc_sys_id }}"
+        other:
+          incident_state: "6"
+          state: "6"
+          close_code: "Solution provided"
+          close_notes: "{{ close_notes | default('Resolved by automated remediation') }}"
+      when: action == 'resolve'
+
+    - name: Display resolve confirmation
+      ansible.builtin.debug:
+        msg: "Incident {{ inc_sys_id }} resolved (close_code: Solution provided)"
+      when: action == 'resolve'

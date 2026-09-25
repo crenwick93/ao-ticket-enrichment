@@ -31,6 +31,11 @@
     ao_webhook_client_id: "{{ lookup('env', 'AO_WEBHOOK_CLIENT_ID') | default('placeholder', true) }}"
     ao_webhook_client_secret: "{{ lookup('env', 'AO_WEBHOOK_CLIENT_SECRET') | default('placeholder', true) }}"
 
+    # AO API (approval bridge)
+    ao_sa_client_id: "{{ lookup('env', 'AO_SA_CLIENT_ID') | default('placeholder', true) }}"
+    ao_sa_client_secret: "{{ lookup('env', 'AO_SA_CLIENT_SECRET') | default('placeholder', true) }}"
+    ao_base_url: "{{ lookup('env', 'AO_WEBHOOK_BASE_URL') | default('placeholder', true) }}"
+
     # Monitoring SSH key (EC2 instance provisioned by Terraform)
     monitoring_ssh_key: "{{ lookup('file', monitoring_ssh_key_path, errors='ignore') | default(omit, true) }}"
     monitoring_ssh_key_path: "{{ lookup('env', 'MONITORING_SSH_KEY_PATH') | default(playbook_dir + '/../../setup/terraform/demo-key.pem', true) }}"

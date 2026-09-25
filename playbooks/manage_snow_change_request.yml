@@ -36,7 +36,7 @@
     - name: Create emergency Change Request
       servicenow.itsm.change_request:
         type: emergency
-        state: authorize
+        state: new
         short_description: "{{ short_description }}"
         description: "{{ description | default(omit) }}"
         priority: "{{ cr_priority | default(1) }}"
@@ -46,13 +46,21 @@
         assignment_group: "{{ cr_assignment_group | default('CAB Approval') }}"
         other:
           parent: "{{ inc_sys_id | default(omit) }}"
-          approval: requested
-          assigned_to: "{{ servicenow_approver | default('admin') }}"
           justification: "{{ justification | default('Automated remediation — see description for details.') }}"
           implementation_plan: "{{ implementation_plan | default('Automated by Ansible Automation Platform and Automation Orchestrator.') }}"
           backout_plan: "{{ backout_plan | default('Investigate failure in AAP job output. Rollback manually if needed.') }}"
           test_plan: "{{ test_plan | default('Automated post-checks will verify service health and system state.') }}"
       register: cr_result
+      when: action == 'create'
+
+    - name: Transition CR to Authorize and request approval
+      servicenow.itsm.change_request:
+        number: "{{ cr_result.record.number }}"
+        state: authorize
+        assignment_group: "{{ cr_assignment_group | default('CAB Approval') }}"
+        other:
+          approval: requested
+          assigned_to: "{{ servicenow_approver | default('admin') }}"
       when: action == 'create'
 
     - name: Display created CR

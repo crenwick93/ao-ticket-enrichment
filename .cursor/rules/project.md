@@ -12,6 +12,15 @@ There are **two AO workflows**:
 
 This project was adapted from `../ansible-lightspeed-ticket-enrichment/` (ALIA version) and follows patterns from `../ao-cve-remediation-scalable/` (CVE project). When in doubt, reference the CVE project for AO workflow JSON format, CaC structure, and coding patterns.
 
+## Ansible Module Rules
+
+**CRITICAL: Always verify module parameters before using them.**
+- Before adding any parameter to an Ansible module, check the official documentation or source to confirm it is a valid, supported parameter for that module version.
+- Do NOT guess module parameters based on general knowledge or other modules.
+- Pay special attention to nested parameters (e.g. `servicenow.itsm` modules have `timeout` under the `instance` sub-dict, NOT as a top-level parameter).
+- For `servicenow.itsm` modules: credentials and connection settings (host, username, password, timeout) are injected via `SN_*` environment variables by the AAP credential type. Use `environment: SN_TIMEOUT: "20"` at play level to override timeout — do NOT use `module_defaults` for connection params.
+- When using `module_defaults`, only set parameters that are actual top-level module parameters.
+
 ## Key Technical Decisions
 
 ### Environment Variables

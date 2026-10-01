@@ -109,13 +109,13 @@
         "organization_name": "Default",
         "extra_vars": {
           "action": "create",
-          "short_description": "Automated Remediation — ${trigger.incident_number} — nginx configuration rollback",
-          "description": "An automated remediation has been identified for incident ${trigger.incident_number}.\n\nRoot Cause: ${rca_agent.result.content.analysis}\n\nProposed Fix: ${select_fix_agent.result.content.fix_template_name}\nReason: ${select_fix_agent.result.content.fix_reason}",
-          "justification": "AI root cause analysis identified the issue and found an automated remediation in the AAP catalog: ${select_fix_agent.result.content.fix_template_name}. Approval is required before executing.",
+          "short_description": "Automated Remediation — ${trigger.incident_number}",
+          "description": "An automated remediation has been identified for incident ${trigger.incident_number}.\n\nProposed Fix: ${select_fix_agent.result.content.fix_template_name}\nReason: ${select_fix_agent.result.content.fix_reason}\n\nThis change request was raised automatically by Automation Orchestrator following AI root cause analysis. When approved and moved to Implement, the remediation will execute automatically.",
+          "justification": "AI root cause analysis identified the issue and found an automated remediation in the AAP catalog. Approval is required before executing.",
           "inc_sys_id": "${trigger.incident_sys_id}",
-          "implementation_plan": "Automated by Ansible Automation Platform and Automation Orchestrator.\n\nWhen this CR is approved and moved to Implement in ServiceNow, EDA will detect the state change and automatically resume the AO workflow to execute: ${select_fix_agent.result.content.fix_template_name}",
-          "backout_plan": "Investigate failure in AAP job output. The rollback playbook deploys a known-good configuration — manual rollback is unlikely to be needed.",
-          "test_plan": "Automated post-checks: nginx -t config validation, systemctl is-active nginx, HTTP health check.",
+          "implementation_plan": "Automated by Ansible Automation Platform. When this CR is moved to Implement, EDA will detect the state change and execute: ${select_fix_agent.result.content.fix_template_name}",
+          "backout_plan": "Investigate failure in AAP job output. The rollback playbook deploys a known-good configuration.",
+          "test_plan": "Automated post-checks: nginx -t config validation, systemctl is-active nginx.",
           "fix_template_name": "${select_fix_agent.result.content.fix_template_name}"
         }
       },

@@ -4,6 +4,10 @@
   connection: local
   gather_facts: false
 
+  module_defaults:
+    servicenow.itsm.incident:
+      timeout: 20
+
   tasks:
     - name: Validate required variables
       ansible.builtin.assert:

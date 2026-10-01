@@ -4,9 +4,8 @@
   connection: local
   gather_facts: false
 
-  module_defaults:
-    servicenow.itsm.incident:
-      timeout: 20
+  environment:
+    SN_TIMEOUT: "20"
 
   tasks:
     - name: Validate required variables

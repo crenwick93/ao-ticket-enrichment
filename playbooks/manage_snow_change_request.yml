@@ -22,11 +22,8 @@
   connection: local
   gather_facts: false
 
-  module_defaults:
-    servicenow.itsm.change_request:
-      timeout: 20
-    servicenow.itsm.incident:
-      timeout: 20
+  environment:
+    SN_TIMEOUT: "20"
 
   tasks:
     - name: Validate action

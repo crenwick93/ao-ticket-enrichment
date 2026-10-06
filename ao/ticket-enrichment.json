@@ -74,8 +74,9 @@
             }
           }
         },
-        "credential_id": "0e1c36ba-dc10-498e-8589-541087111f1c",
-        "llm_model_id": "29012a23-f339-4832-9e54-d585a0a53988"
+        "credential_id": "c0bae15c-a4f4-4b1c-a467-7efee23080ad",
+        "llm_model_id": "9fcba263-f62e-4d36-b38c-3e89c9e4a2aa",
+        "tool_selection_strategy": "NONE"
       },
       "position": {
         "x": 800,

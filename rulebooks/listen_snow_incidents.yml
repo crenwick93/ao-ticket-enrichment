@@ -19,7 +19,7 @@
 
     - name: Trigger AO workflow for new incidents
       throttle:
-        once_within: 30 minutes
+        once_within: 1 minute
         group_by_attributes:
           - sys_id
       condition: event.state == '1' and event.short_description is match(".*nginx.*|.*ServiceDown.*", ignorecase=true)

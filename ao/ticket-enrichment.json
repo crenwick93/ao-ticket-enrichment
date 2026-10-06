@@ -26,10 +26,7 @@
           }
         }
       },
-      "position": {
-        "x": 0,
-        "y": 300
-      }
+      "position": { "x": 0, "y": 300 }
     }
   ],
   "nodes": [
@@ -38,6 +35,7 @@
       "type": "aap_job_template",
       "name": "Gather Diagnostics",
       "parameters": {
+        "diff_mode": false,
         "job_template_name": "Gather Diagnostics",
         "organization_name": "Default",
         "extra_vars": {
@@ -45,41 +43,43 @@
           "incident_description": "${trigger.incident_description}"
         }
       },
-      "position": {
-        "x": 400,
-        "y": 300
-      }
+      "position": { "x": 400, "y": 300 }
     },
     {
       "id": "triage_agent",
       "type": "agentic",
       "name": "AI: Root Cause Analysis",
       "parameters": {
-        "model": "llama-scout-17b",
-        "prompt": "You are an expert Linux systems engineer. A ServiceNow incident has been raised and system diagnostics have been collected from the affected host.\n\nIncident: ${trigger.incident_number}\nDescription: ${trigger.incident_description}\n\nDiagnostics:\n${gather_diagnostics.artifacts.diagnostics_report}\n\nAnalyse the diagnostics and provide:\n1. Root Cause Analysis — what failed and why\n2. Evidence — key log lines or indicators that support your conclusion\n3. Remediation steps — specific commands or actions to resolve the issue\n4. Prevention — how to stop this happening again\n\nIMPORTANT FORMATTING RULES:\n- Your response will be inserted into a ServiceNow work notes field.\n- Format your entire response as HTML. Do NOT use markdown.\n- Use <h3> for section headings, <p> for paragraphs, <ol>/<ul>/<li> for lists.\n- Use <code> for inline commands and file paths.\n- Use <pre> for multi-line error output or log excerpts.\n- Do NOT wrap the response in [code] tags — that will be added automatically.\n- Keep the response concise and actionable."
+        "prompt": "You are an expert Linux systems engineer writing a ServiceNow work note. Format your ENTIRE response as HTML using <h3> for headings, <p> for paragraphs, <ul>/<li> for lists, <code> for commands, and <pre style=\"white-space: pre-wrap; word-wrap: break-word;\"> for log excerpts. Do NOT explain your formatting choices. Do NOT use markdown. Just write the analysis directly in HTML.\n\nA ServiceNow incident has been raised and system diagnostics have been collected from the affected host. Analyse the diagnostics and provide root cause analysis, evidence from logs, remediation steps with specific commands, and prevention recommendations.\n\nIncident: ${trigger.incident_number}\nDescription: ${trigger.incident_description}\n\nDiagnostics:\n${gather_diagnostics.artifacts.diagnostics_report}",
+        "response_schema": {
+          "type": "object",
+          "required": ["analysis"],
+          "properties": {
+            "analysis": {
+              "type": "string",
+              "description": "Full HTML-formatted root cause analysis for the ServiceNow work note"
+            }
+          }
+        }
       },
-      "position": {
-        "x": 800,
-        "y": 300
-      }
+      "position": { "x": 800, "y": 300 }
     },
     {
       "id": "update_snow_ticket",
       "type": "aap_job_template",
       "name": "Update SNOW Ticket",
       "parameters": {
-        "job_template_name": "Update SNOW Ticket",
+        "diff_mode": false,
+        "job_template_name": "Manage SNOW Incident",
         "organization_name": "Default",
         "extra_vars": {
-          "incident_sys_id": "${trigger.incident_sys_id}",
+          "action": "update",
+          "inc_sys_id": "${trigger.incident_sys_id}",
           "incident_state": "2",
-          "work_notes": "[AUTOMATED — AI Root Cause Analysis]\n\n${triage_agent.result.content}"
+          "work_notes": "[AUTOMATED — AI Root Cause Analysis]${triage_agent.result.content.analysis}"
         }
       },
-      "position": {
-        "x": 1200,
-        "y": 300
-      }
+      "position": { "x": 1200, "y": 300 }
     }
   ],
   "edges": [

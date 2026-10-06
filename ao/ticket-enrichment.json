@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0.0",
-  "name": "Ticket Enrichment — AI-Driven Incident Analysis",
+  "name": "Ticket Enrichment \u2014 AI-Driven Incident Analysis",
   "description": "When a ServiceNow incident arrives via EDA, this workflow gathers diagnostics from the affected host, sends them to an AI agent for root cause analysis, and updates the incident with the findings.",
   "triggers": [
     {
@@ -24,9 +24,15 @@
               "description": "Combined short_description + description from the incident"
             }
           }
-        }
+        },
+        "authorized_service_account_ids": [
+          "15b7e9ad-e490-40bf-bc48-fa0b4d4ab5b2"
+        ]
       },
-      "position": { "x": 0, "y": 300 }
+      "position": {
+        "x": 0,
+        "y": 300
+      }
     }
   ],
   "nodes": [
@@ -41,9 +47,14 @@
         "extra_vars": {
           "incident_sys_id": "${trigger.incident_sys_id}",
           "incident_description": "${trigger.incident_description}"
-        }
+        },
+        "credential_id": "48ace1f1-f634-48ad-bcd3-e31e7446aef6",
+        "integration_id": "424e0b19-4e8b-454a-af9d-f6a2fd40a9a9"
       },
-      "position": { "x": 400, "y": 300 }
+      "position": {
+        "x": 400,
+        "y": 300
+      }
     },
     {
       "id": "triage_agent",
@@ -53,16 +64,23 @@
         "prompt": "You are an expert Linux systems engineer writing a ServiceNow work note. Format your ENTIRE response as HTML using <h3> for headings, <p> for paragraphs, <ul>/<li> for lists, <code> for commands, and <pre style=\"white-space: pre-wrap; word-wrap: break-word;\"> for log excerpts. Do NOT explain your formatting choices. Do NOT use markdown. Just write the analysis directly in HTML.\n\nA ServiceNow incident has been raised and system diagnostics have been collected from the affected host. Analyse the diagnostics and provide root cause analysis, evidence from logs, remediation steps with specific commands, and prevention recommendations.\n\nIncident: ${trigger.incident_number}\nDescription: ${trigger.incident_description}\n\nDiagnostics:\n${gather_diagnostics.artifacts.diagnostics_report}",
         "response_schema": {
           "type": "object",
-          "required": ["analysis"],
+          "required": [
+            "analysis"
+          ],
           "properties": {
             "analysis": {
               "type": "string",
               "description": "Full HTML-formatted root cause analysis for the ServiceNow work note"
             }
           }
-        }
+        },
+        "credential_id": "0e1c36ba-dc10-498e-8589-541087111f1c",
+        "llm_model_id": "29012a23-f339-4832-9e54-d585a0a53988"
       },
-      "position": { "x": 800, "y": 300 }
+      "position": {
+        "x": 800,
+        "y": 300
+      }
     },
     {
       "id": "update_snow_ticket",
@@ -76,15 +94,29 @@
           "action": "update",
           "inc_sys_id": "${trigger.incident_sys_id}",
           "incident_state": "2",
-          "work_notes": "[AUTOMATED — AI Root Cause Analysis]${triage_agent.result.content.analysis}"
-        }
+          "work_notes": "[AUTOMATED \u2014 AI Root Cause Analysis]${triage_agent.result.content.analysis}"
+        },
+        "credential_id": "48ace1f1-f634-48ad-bcd3-e31e7446aef6",
+        "integration_id": "424e0b19-4e8b-454a-af9d-f6a2fd40a9a9"
       },
-      "position": { "x": 1200, "y": 300 }
+      "position": {
+        "x": 1200,
+        "y": 300
+      }
     }
   ],
   "edges": [
-    { "from": "trigger_eda", "to": "gather_diagnostics" },
-    { "from": "gather_diagnostics", "to": "triage_agent" },
-    { "from": "triage_agent", "to": "update_snow_ticket" }
+    {
+      "from": "trigger_eda",
+      "to": "gather_diagnostics"
+    },
+    {
+      "from": "gather_diagnostics",
+      "to": "triage_agent"
+    },
+    {
+      "from": "triage_agent",
+      "to": "update_snow_ticket"
+    }
   ]
 }

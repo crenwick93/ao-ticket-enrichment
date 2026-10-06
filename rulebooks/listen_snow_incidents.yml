@@ -19,10 +19,10 @@
 
     - name: Trigger AO workflow for new incidents
       throttle:
-        once_within: 10 minutes
+        once_within: 30 minutes
         group_by_attributes:
           - sys_id
-      condition: event.short_description is defined
+      condition: event.state == '1' and event.short_description is match(".*nginx.*|.*ServiceDown.*", ignorecase=true)
       action:
         run_job_template:
           name: AO Ticket Enrichment Bridge

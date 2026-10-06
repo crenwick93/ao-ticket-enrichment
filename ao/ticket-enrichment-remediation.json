@@ -222,7 +222,7 @@
       "name": "Run Remediation",
       "parameters": {
         "diff_mode": false,
-        "job_template_name": "Rollback nginx Configuration",
+        "job_template_name": "${select_fix_agent.result.content.fix_template_name}",
         "organization_name": "Default",
         "extra_vars": {
           "incident_sys_id": "${trigger.incident_sys_id}",

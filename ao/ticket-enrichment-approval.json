@@ -93,7 +93,7 @@
         "extra_vars": {
           "action": "update",
           "inc_sys_id": "${trigger.incident_sys_id}",
-          "work_notes": "[AUTOMATED — AI Root Cause Analysis]${rca_agent.result.content.analysis}",
+          "work_notes": "[AUTOMATED \u2014 AI Root Cause Analysis]${rca_agent.result.content.analysis}",
           "incident_state": "2"
         },
         "credential_id": "48ace1f1-f634-48ad-bcd3-e31e7446aef6",
@@ -231,7 +231,7 @@
           "backout_plan": "Investigate failure in AAP job output. The rollback playbook deploys a known-good configuration.",
           "justification": "AI root cause analysis identified the issue and found an automated remediation in the AAP catalog. Approval is required before executing.",
           "fix_template_name": "${select_fix_agent.result.content.fix_template_name}",
-          "short_description": "Automated Remediation — ${trigger.incident_number}",
+          "short_description": "Automated Remediation \u2014 ${trigger.incident_number}",
           "implementation_plan": "Automated by Ansible Automation Platform. When this CR is moved to Implement, EDA will detect the state change and execute: ${select_fix_agent.result.content.fix_template_name}"
         },
         "credential_id": "48ace1f1-f634-48ad-bcd3-e31e7446aef6",
@@ -269,7 +269,7 @@
         },
         "credential_id": "48ace1f1-f634-48ad-bcd3-e31e7446aef6",
         "integration_id": "424e0b19-4e8b-454a-af9d-f6a2fd40a9a9",
-        "job_template_name": "Rollback nginx Configuration",
+        "job_template_name": "${select_fix_agent.result.content.fix_template_name}",
         "organization_name": "Default"
       },
       "position": {
@@ -286,7 +286,7 @@
         "extra_vars": {
           "action": "resolve",
           "inc_sys_id": "${trigger.incident_sys_id}",
-          "work_notes": "[AUTOMATED — Remediation Complete] Automated remediation applied using: ${select_fix_agent.result.content.fix_template_name}. CR: ${create_cr.artifacts.cr_number}"
+          "work_notes": "[AUTOMATED \u2014 Remediation Complete] Automated remediation applied using: ${select_fix_agent.result.content.fix_template_name}. CR: ${create_cr.artifacts.cr_number}"
         },
         "credential_id": "48ace1f1-f634-48ad-bcd3-e31e7446aef6",
         "integration_id": "424e0b19-4e8b-454a-af9d-f6a2fd40a9a9",
@@ -307,7 +307,7 @@
         "extra_vars": {
           "action": "update",
           "inc_sys_id": "${trigger.incident_sys_id}",
-          "work_notes": "[AUTOMATED — No Automated Remediation Available] The AI agent searched the automation catalog but could not find a suitable remediation. Reason: ${select_fix_agent.result.content.fix_reason}. Manual intervention required."
+          "work_notes": "[AUTOMATED \u2014 No Automated Remediation Available] The AI agent searched the automation catalog but could not find a suitable remediation. Reason: ${select_fix_agent.result.content.fix_reason}. Manual intervention required."
         },
         "credential_id": "48ace1f1-f634-48ad-bcd3-e31e7446aef6",
         "integration_id": "424e0b19-4e8b-454a-af9d-f6a2fd40a9a9",

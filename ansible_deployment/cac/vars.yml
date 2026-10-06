@@ -83,8 +83,8 @@ controller_credentials:
       SN_USERNAME: "{{ sn_username }}"
       SN_PASSWORD: "{{ sn_password }}"
 
-  - name: "AAP Controller"
-    description: "Controller credential for internal workflow operations"
+  - name: "TE - AAP Controller"
+    description: "Controller credential for ticket enrichment workflow operations"
     organization: "Default"
     credential_type: "Red Hat Ansible Automation Platform"
     inputs:
@@ -92,8 +92,8 @@ controller_credentials:
       oauth_token: "{{ aap_token }}"
       verify_ssl: "{{ aap_validate_certs }}"
 
-  - name: "AO Webhook"
-    description: "OAuth2 credentials for AO EDA trigger endpoint"
+  - name: "TE - AO Webhook"
+    description: "OAuth2 credentials for AO ticket enrichment EDA trigger endpoint"
     organization: "Default"
     credential_type: "AO Webhook Credential"
     inputs:
@@ -101,8 +101,8 @@ controller_credentials:
       webhook_client_id: "{{ ao_webhook_client_id }}"
       webhook_client_secret: "{{ ao_webhook_client_secret }}"
 
-  - name: "AO API"
-    description: "Service account for AO approval bridge (uses webhook credentials)"
+  - name: "TE - AO API"
+    description: "Service account for ticket enrichment AO approval bridge"
     organization: "Default"
     credential_type: "AO API Credential"
     inputs:
@@ -145,7 +145,7 @@ controller_templates:
     inventory: "Demo Inventory"
     ask_variables_on_launch: true
     credentials:
-      - "AO Webhook"
+      - "TE - AO Webhook"
 
   - name: "Gather Diagnostics"
     description: >-
@@ -221,10 +221,10 @@ controller_templates:
     credentials:
       - "ServiceNow ITSM"
 
-  - name: "Bridge AO Approval"
+  - name: "TE - Bridge AO Approval"
     description: >-
-      Bridges ServiceNow CR approval to AO. Authenticates with AO API,
-      finds pending approval by CR number, approves via PATCH.
+      Bridges ServiceNow CR approval to AO for ticket enrichment workflows.
+      Authenticates with AO API, finds pending approval by CR number, approves via PATCH.
       Triggered by EDA when a CR moves to Implement state.
     organization: "Default"
     job_type: "run"
@@ -233,7 +233,7 @@ controller_templates:
     inventory: "Demo Inventory"
     ask_variables_on_launch: true
     credentials:
-      - "AO API"
+      - "TE - AO API"
 
 # =============================================================================
 # Event-Driven Ansible
@@ -286,8 +286,8 @@ eda_projects:
 # EDA Credentials
 # -----------------------------------------------------------------------------
 eda_credentials:
-  - name: "AAP Controller Token"
-    description: "Controller credential so EDA can launch job templates"
+  - name: "TE - AAP Controller Token"
+    description: "Controller credential so EDA can launch ticket enrichment job templates"
     credential_type: "Red Hat Ansible Automation Platform"
     organization: "Default"
     inputs:
@@ -295,8 +295,8 @@ eda_credentials:
       oauth_token: "{{ aap_token }}"
       verify_ssl: false
 
-  - name: "ServiceNow EDA"
-    description: "ServiceNow credentials for the EDA records source plugin"
+  - name: "TE - ServiceNow EDA"
+    description: "ServiceNow credentials for ticket enrichment EDA source plugin"
     credential_type: "ServiceNow Credential"
     organization: "Default"
     inputs:
@@ -318,5 +318,5 @@ eda_rulebook_activations:
     extra_vars:
       webhook_path: "{{ ao_webhook_path }}"
     eda_credentials:
-      - "AAP Controller Token"
-      - "ServiceNow EDA"
+      - "TE - AAP Controller Token"
+      - "TE - ServiceNow EDA"

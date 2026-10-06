@@ -63,7 +63,7 @@
       condition: event.state == '-1'
       action:
         run_job_template:
-          name: Bridge AO Approval
+          name: TE - Bridge AO Approval
           organization: Default
           job_args:
             extra_vars:

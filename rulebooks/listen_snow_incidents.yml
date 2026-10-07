@@ -41,32 +41,33 @@
                 incident_urgency: "{{ event.urgency }}"
                 incident_impact: "{{ event.impact }}"
 
-- name: ServiceNow CR Approval Bridge
-  hosts: all
-  sources:
-    - servicenow.itsm.records:
-        table: change_request
-        interval: 10
-        sysparm_query: >
-          short_descriptionLIKEAutomated Remediation^
-          ORDERBYDESCsys_updated_on^ORDERBYDESCsys_id
-        remote_servicenow_timezone: "Europe/London"
-        filters:
-          - ansible.eda.json_filter:
-          - ansible.eda.normalize_keys:
-  rules:
-    - name: CR moved to Implement — bridge approval to AO
-      throttle:
-        once_within: 10 minutes
-        group_by_attributes:
-          - sys_id
-      condition: event.state == '-1'
-      action:
-        run_job_template:
-          name: TE - Bridge AO Approval
-          organization: Default
-          job_args:
-            extra_vars:
-              cr_number: "{{ event.number }}"
-              cr_sys_id: "{{ event.sys_id }}"
-              cr_short_description: "{{ event.short_description }}"
+# Commented out — clashes with Patching Loop CR listener on this instance
+# - name: ServiceNow CR Approval Bridge
+#   hosts: all
+#   sources:
+#     - servicenow.itsm.records:
+#         table: change_request
+#         interval: 10
+#         sysparm_query: >
+#           short_descriptionLIKEAutomated Remediation^
+#           ORDERBYDESCsys_updated_on^ORDERBYDESCsys_id
+#         remote_servicenow_timezone: "Europe/London"
+#         filters:
+#           - ansible.eda.json_filter:
+#           - ansible.eda.normalize_keys:
+#   rules:
+#     - name: CR moved to Implement — bridge approval to AO
+#       throttle:
+#         once_within: 10 minutes
+#         group_by_attributes:
+#           - sys_id
+#       condition: event.state == '-1'
+#       action:
+#         run_job_template:
+#           name: TE - Bridge AO Approval
+#           organization: Default
+#           job_args:
+#             extra_vars:
+#               cr_number: "{{ event.number }}"
+#               cr_sys_id: "{{ event.sys_id }}"
+#               cr_short_description: "{{ event.short_description }}"

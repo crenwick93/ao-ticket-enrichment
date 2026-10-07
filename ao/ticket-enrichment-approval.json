@@ -24,11 +24,7 @@
               "description": "Combined short_description + description from the incident"
             }
           }
-        },
-        "webhook_path": "e8a5887f-6c48-47d8-aece-e420d1abb7f4",
-        "authorized_service_account_ids": [
-          "15b7e9ad-e490-40bf-bc48-fa0b4d4ab5b2"
-        ]
+        }
       },
       "position": {
         "x": 0,
@@ -47,8 +43,8 @@
           "incident_sys_id": "${trigger.incident_sys_id}",
           "incident_description": "${trigger.incident_description}"
         },
-        "credential_id": "48ace1f1-f634-48ad-bcd3-e31e7446aef6",
-        "integration_id": "424e0b19-4e8b-454a-af9d-f6a2fd40a9a9",
+        "credential_id": "beb79e87-9581-4447-873d-229755ea8a2b",
+        "integration_id": "851d4bfd-6ccb-4b46-81ec-d1cc930b87ef",
         "job_template_name": "Gather Diagnostics",
         "organization_name": "Default"
       },
@@ -63,9 +59,7 @@
       "name": "AI: Root Cause Analysis",
       "parameters": {
         "prompt": "You are an expert Linux systems engineer writing a ServiceNow work note. Format your ENTIRE response as HTML using <h3> for headings, <p> for paragraphs, <ul>/<li> for lists, <code> for commands, and <pre style=\"white-space: pre-wrap; word-wrap: break-word;\"> for log excerpts. Do NOT explain your formatting choices. Do NOT use markdown. Just write the analysis directly in HTML.\n\nA ServiceNow incident has been raised and system diagnostics have been collected from the affected host. Analyse the diagnostics and provide root cause analysis, evidence from logs, remediation steps with specific commands, and prevention recommendations.\n\nIncident: ${trigger.incident_number}\nDescription: ${trigger.incident_description}\n\nDiagnostics:\n${gather_diagnostics.artifacts.diagnostics_report}",
-        "llm_model_id": "943dec72-77a7-41a1-b7d2-5b576387e995",
         "tool_selection_strategy": "NONE",
-        "credential_id": "c0bae15c-a4f4-4b1c-a467-7efee23080ad",
         "response_schema": {
           "type": "object",
           "required": [
@@ -96,8 +90,8 @@
           "work_notes": "[AUTOMATED \u2014 AI Root Cause Analysis]${rca_agent.result.content.analysis}",
           "incident_state": "2"
         },
-        "credential_id": "48ace1f1-f634-48ad-bcd3-e31e7446aef6",
-        "integration_id": "424e0b19-4e8b-454a-af9d-f6a2fd40a9a9",
+        "credential_id": "beb79e87-9581-4447-873d-229755ea8a2b",
+        "integration_id": "851d4bfd-6ccb-4b46-81ec-d1cc930b87ef",
         "job_template_name": "Manage SNOW Incident",
         "organization_name": "Default"
       },
@@ -112,65 +106,13 @@
       "name": "AI: Search Automation Catalog",
       "parameters": {
         "prompt": "You are an IT operations automation agent. A ServiceNow incident has been analysed and root cause identified. Your job is to find the correct AAP job template that can fix this issue.\n\nIncident: ${trigger.incident_number}\nDescription: ${trigger.incident_description}\nDiagnostics: ${gather_diagnostics.artifacts.diagnostics_report}\n\nSteps:\n1. Use the AAP MCP tools to list available job templates\n2. Read the descriptions carefully to find the one that can fix this specific issue\n3. If you find a matching job template, set fix_template_name to the exact name of that job template, set fix_available to 'yes', and explain why you selected it in fix_reason\n4. If no suitable job template exists, set fix_available to 'no' and explain what kind of remediation would be needed in fix_reason\n\nfix_reason must always be a descriptive sentence. Never just 'yes' or 'no'.\nDo NOT run the job template. Just identify the correct one.",
-        "llm_model_id": "943dec72-77a7-41a1-b7d2-5b576387e995",
         "tool_selection_strategy": "SELECTED",
-        "tool_selections": [
-          "3f67a257-d2c0-4b3a-8569-23078e49cab0",
-          "b81e441f-3e27-4a83-8a8e-4bc5a521543c",
-          "f1ba1e3a-4ee8-4aa4-8727-457616304dc3",
-          "b2c6c275-b54c-450e-9a4c-f7f24a675f77",
-          "9cbce7c4-2969-4b2a-ae17-19d020c1c03d",
-          "67a1fe13-53eb-490b-a000-f14617ebdafb",
-          "206d2d1d-0b9e-4687-aa05-373626ca1854",
-          "30c3f072-39e8-433b-9f6a-74734a019d74",
-          "e4b11c1b-dbbb-4e5f-aa44-a777fe9ce194",
-          "80cc7584-76ce-4504-ba2b-6c7a1b395f54",
-          "ae5ba895-6170-40c5-be83-e3578e6cf3aa",
-          "db5016ed-5a53-4eb3-8b32-43786871af56",
-          "7870eb12-13c6-40a1-89c6-e1e105e0c787",
-          "993179b4-1142-483b-b7f4-60836b00d302",
-          "fd47f00a-31fa-44b3-8180-f9b94ad2bae7",
-          "fcb8846c-22e5-407e-94c1-914e8d292b28",
-          "9bafbacc-3e16-41fb-a705-115f4cbefc3d",
-          "7330bb8b-76d8-4f7c-ab16-982917dba6f2",
-          "2e7343dc-c2b2-41d9-9f54-9ace8d141070",
-          "36e6c856-d432-45a5-b832-101e636f1f4d",
-          "d3742de4-7943-4116-9794-75b72523eef4",
-          "05d6b9de-4f80-4ffb-809d-cdd2b7705b74",
-          "ba9b2a06-d1ed-4e9e-b534-b33bc84f8033",
-          "6a87bb27-92a3-4c59-80df-db10c925686a",
-          "2739ee6f-67b1-4ed3-8e45-0473b65da894",
-          "e9c43e60-5eb3-4696-9cfb-21f733b9de9c",
-          "7edebcae-d524-4fb5-b682-b0bd35734bda",
-          "de64f17f-7aeb-4da6-b268-7fc39895b0ff",
-          "cbb3f75a-f3b8-4c22-a067-28c60a8f4e3a",
-          "1c65f310-2d9d-46e5-8a60-05fa2d42698c",
-          "9e0362ab-6476-439a-b8b2-b32c76dd7bd0",
-          "e36c2036-6981-413b-b8ea-ac23d96291ce",
-          "168fd64f-6449-45ef-9a47-9bcfd80dbcfd",
-          "bbd7bfef-7e74-4379-b61d-a314d382a213",
-          "611916bd-b6cf-44f0-aa16-8329e2695663",
-          "09161351-9946-4a19-8ded-dd04612bdfe1",
-          "bd3448fc-05af-4d88-b38b-d9aa52cea8cd",
-          "346316a6-98a8-4043-9be4-40420b1283be",
-          "6d1a4e20-2e99-40ca-9672-fd8dc1b51193",
-          "a7a5ff1f-d3ef-41df-a937-17541b4036ed",
-          "e243d68d-b1b1-479a-b0cf-b95d2f799d2b",
-          "c17f8c7e-c933-4170-b4da-cd10164ce9fa",
-          "9d43d294-ad00-422c-b41b-94eb53ce2880",
-          "8176845f-3d1c-4055-a174-883ffe8e96c1",
-          "4a1666b9-a96e-42c3-9bc2-26f6fdf479da",
-          "13e6808c-b26b-43bb-9844-c3092084bf95",
-          "0abf6287-881c-4894-93f2-e88e4233c7fd",
-          "6c566b63-3b51-49d0-bea1-7f56492792d8"
-        ],
         "integration_connections": [
           {
-            "integration_id": "aae92a76-b020-41dc-a64d-1e772bd17c8b",
-            "credential_id": "2c1877ed-bfc3-4d87-9777-c56699aff23d"
+            "integration_id": "c944f8b5-56f7-42df-90d5-f18695215207",
+            "credential_id": "13f3c6d9-90b7-44e0-8720-eeea51cbc69a"
           }
         ],
-        "credential_id": "c0bae15c-a4f4-4b1c-a467-7efee23080ad",
         "response_schema": {
           "type": "object",
           "required": [
@@ -234,8 +176,8 @@
           "short_description": "Automated Remediation \u2014 ${trigger.incident_number}",
           "implementation_plan": "Automated by Ansible Automation Platform. When this CR is moved to Implement, EDA will detect the state change and execute: ${select_fix_agent.result.content.fix_template_name}"
         },
-        "credential_id": "48ace1f1-f634-48ad-bcd3-e31e7446aef6",
-        "integration_id": "424e0b19-4e8b-454a-af9d-f6a2fd40a9a9",
+        "credential_id": "beb79e87-9581-4447-873d-229755ea8a2b",
+        "integration_id": "851d4bfd-6ccb-4b46-81ec-d1cc930b87ef",
         "job_template_id": 55,
         "job_template_name": "Manage SNOW Change Request",
         "organization_name": "Default"
@@ -267,8 +209,8 @@
           "incident_sys_id": "${trigger.incident_sys_id}",
           "incident_description": "${trigger.incident_description}"
         },
-        "credential_id": "48ace1f1-f634-48ad-bcd3-e31e7446aef6",
-        "integration_id": "424e0b19-4e8b-454a-af9d-f6a2fd40a9a9",
+        "credential_id": "beb79e87-9581-4447-873d-229755ea8a2b",
+        "integration_id": "851d4bfd-6ccb-4b46-81ec-d1cc930b87ef",
         "job_template_name": "${select_fix_agent.result.content.fix_template_name}",
         "organization_name": "Default"
       },
@@ -288,8 +230,8 @@
           "inc_sys_id": "${trigger.incident_sys_id}",
           "work_notes": "[AUTOMATED \u2014 Remediation Complete] Automated remediation applied using: ${select_fix_agent.result.content.fix_template_name}. CR: ${create_cr.artifacts.cr_number}"
         },
-        "credential_id": "48ace1f1-f634-48ad-bcd3-e31e7446aef6",
-        "integration_id": "424e0b19-4e8b-454a-af9d-f6a2fd40a9a9",
+        "credential_id": "beb79e87-9581-4447-873d-229755ea8a2b",
+        "integration_id": "851d4bfd-6ccb-4b46-81ec-d1cc930b87ef",
         "job_template_name": "Manage SNOW Incident",
         "organization_name": "Default"
       },
@@ -309,8 +251,8 @@
           "inc_sys_id": "${trigger.incident_sys_id}",
           "work_notes": "[AUTOMATED \u2014 No Automated Remediation Available] The AI agent searched the automation catalog but could not find a suitable remediation. Reason: ${select_fix_agent.result.content.fix_reason}. Manual intervention required."
         },
-        "credential_id": "48ace1f1-f634-48ad-bcd3-e31e7446aef6",
-        "integration_id": "424e0b19-4e8b-454a-af9d-f6a2fd40a9a9",
+        "credential_id": "beb79e87-9581-4447-873d-229755ea8a2b",
+        "integration_id": "851d4bfd-6ccb-4b46-81ec-d1cc930b87ef",
         "job_template_name": "Manage SNOW Incident",
         "organization_name": "Default"
       },

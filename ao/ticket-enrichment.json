@@ -24,10 +24,7 @@
               "description": "Combined short_description + description from the incident"
             }
           }
-        },
-        "authorized_service_account_ids": [
-          "15b7e9ad-e490-40bf-bc48-fa0b4d4ab5b2"
-        ]
+        }
       },
       "position": {
         "x": 0,
@@ -48,8 +45,8 @@
           "incident_sys_id": "${trigger.incident_sys_id}",
           "incident_description": "${trigger.incident_description}"
         },
-        "credential_id": "48ace1f1-f634-48ad-bcd3-e31e7446aef6",
-        "integration_id": "424e0b19-4e8b-454a-af9d-f6a2fd40a9a9"
+        "credential_id": "beb79e87-9581-4447-873d-229755ea8a2b",
+        "integration_id": "851d4bfd-6ccb-4b46-81ec-d1cc930b87ef"
       },
       "position": {
         "x": 400,
@@ -74,8 +71,6 @@
             }
           }
         },
-        "credential_id": "c0bae15c-a4f4-4b1c-a467-7efee23080ad",
-        "llm_model_id": "943dec72-77a7-41a1-b7d2-5b576387e995",
         "tool_selection_strategy": "NONE"
       },
       "position": {
@@ -97,8 +92,8 @@
           "incident_state": "2",
           "work_notes": "[AUTOMATED \u2014 AI Root Cause Analysis]${triage_agent.result.content.analysis}"
         },
-        "credential_id": "48ace1f1-f634-48ad-bcd3-e31e7446aef6",
-        "integration_id": "424e0b19-4e8b-454a-af9d-f6a2fd40a9a9"
+        "credential_id": "beb79e87-9581-4447-873d-229755ea8a2b",
+        "integration_id": "851d4bfd-6ccb-4b46-81ec-d1cc930b87ef"
       },
       "position": {
         "x": 1200,

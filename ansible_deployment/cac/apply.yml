@@ -26,14 +26,15 @@
     sn_password: "{{ lookup('env', 'SERVICENOW_PASSWORD') | default(lookup('env', 'SN_PASSWORD'), true) | default(omit, true) }}"
 
     # AO Webhook (EDA-to-AO bridge)
+    # Accept AO_WEBHOOK_CLIENT_* or AO_SA_CLIENT_* (same service account is typical)
     ao_webhook_base_url: "{{ lookup('env', 'AO_WEBHOOK_BASE_URL') | default(omit, true) }}"
     ao_webhook_path: "{{ lookup('env', 'AO_WEBHOOK_PATH') | default('ticket-enrichment-trigger', true) }}"
-    ao_webhook_client_id: "{{ lookup('env', 'AO_WEBHOOK_CLIENT_ID') | default('placeholder', true) }}"
-    ao_webhook_client_secret: "{{ lookup('env', 'AO_WEBHOOK_CLIENT_SECRET') | default('placeholder', true) }}"
+    ao_webhook_client_id: "{{ lookup('env', 'AO_WEBHOOK_CLIENT_ID') | default(lookup('env', 'AO_SA_CLIENT_ID'), true) | default('placeholder', true) }}"
+    ao_webhook_client_secret: "{{ lookup('env', 'AO_WEBHOOK_CLIENT_SECRET') | default(lookup('env', 'AO_SA_CLIENT_SECRET'), true) | default('placeholder', true) }}"
 
-    # AO API (approval bridge)
-    ao_sa_client_id: "{{ lookup('env', 'AO_SA_CLIENT_ID') | default('placeholder', true) }}"
-    ao_sa_client_secret: "{{ lookup('env', 'AO_SA_CLIENT_SECRET') | default('placeholder', true) }}"
+    # AO API (approval bridge) — falls back to webhook client vars if SA_* unset
+    ao_sa_client_id: "{{ lookup('env', 'AO_SA_CLIENT_ID') | default(lookup('env', 'AO_WEBHOOK_CLIENT_ID'), true) | default('placeholder', true) }}"
+    ao_sa_client_secret: "{{ lookup('env', 'AO_SA_CLIENT_SECRET') | default(lookup('env', 'AO_WEBHOOK_CLIENT_SECRET'), true) | default('placeholder', true) }}"
     ao_base_url: "{{ lookup('env', 'AO_WEBHOOK_BASE_URL') | default('placeholder', true) }}"
 
     # Monitoring SSH key (EC2 instance provisioned by Terraform)

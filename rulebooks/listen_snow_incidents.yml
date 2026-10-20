@@ -22,9 +22,9 @@
         once_within: 10 minutes
         group_by_attributes:
           - sys_id
-      # New only (state 1). Do NOT put state=1 in sysparm_query — that breaks
+      # New only (state "1"). Do NOT put state=1 in sysparm_query — that breaks
       # servicenow.itsm.records change detection and events stop firing.
-      condition: (event.state == "1" or event.state == 1) and event.short_description is defined
+      condition: event.state == "1" and event.short_description is defined
       action:
         run_job_template:
           name: AO Ticket Enrichment Bridge

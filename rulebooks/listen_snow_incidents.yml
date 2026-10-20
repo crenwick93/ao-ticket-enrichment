@@ -10,8 +10,9 @@
         table: incident
         interval: 10
         remote_servicenow_timezone: "Europe/London"
+        # Only New (state=1) — avoids re-firing when AO updates/resolves the ticket
         sysparm_query: >
-          ORDERBYDESCsys_updated_on^ORDERBYDESCsys_id
+          state=1^ORDERBYDESCsys_updated_on^ORDERBYDESCsys_id
       filters:
         - ansible.eda.json_filter:
         - ansible.eda.normalize_keys:
@@ -22,7 +23,7 @@
         once_within: 10 minutes
         group_by_attributes:
           - sys_id
-      condition: event.short_description is defined
+      condition: event.state == "1" and event.short_description is defined
       action:
         run_job_template:
           name: AO Ticket Enrichment Bridge
